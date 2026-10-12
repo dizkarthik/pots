@@ -60,5 +60,14 @@ styles/                    BoardUI theme/typography/globals + shadcn bridge
 drizzle/  scripts/seed.ts  middleware.ts
 ```
 
+## Database workflow
+- Schema lives in `lib/db/schema.ts`. After changing it: `npm run db:generate` (writes SQL to `drizzle/`, commit it) then `npm run db:migrate`. Never edit applied migrations.
+- `lib/db/client.ts` exposes `getDb()` (neon-http driver). It has no `server-only` guard because the seed runs under plain Node — app code reaches the DB only via `lib/queries` / `lib/actions`.
+- Map DB rows to the pure balance input with `toLedger()` (`lib/ledger.ts`); never reimplement balance math in SQL or components.
+- neon-http has no interactive transactions; use `db.batch([...])` when several writes must succeed together.
+- `npm run db:seed` refuses to run on a non-empty DB; `npm run db:seed -- --reset` wipes all app data and reseeds.
+- **Local dev and production currently share the same Neon database** (`neon-champagne-canvas`, main branch). Seed/reset affects the live site too.
+
 ## Commands
-`npm run dev` · `npm test` · `npm run typecheck` · `npm run lint` · `npm run build`
+`npm run dev` · `npm test` · `npm run typecheck` · `npm run lint` · `npm run build` · `npm run db:generate` · `npm run db:migrate` · `npm run db:seed` · `npm run db:studio`
+- Don't run `npm run build` while `npm run dev` is running; both write to `.next/`.

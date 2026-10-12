@@ -7,13 +7,21 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
     "@internationalized/date": "^3.12.4",
+    "@neondatabase/serverless": "^1.2.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
+    "drizzle-orm": "^0.45.4",
     "jose": "^6.2.12",
     "lucide-react": "^1.55.0",
     "motion": "^12.43.0",
@@ -31,12 +39,16 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^24.19.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^18.0.7",
+    "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "15.5.27",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "tsx": "^4.23.15",
+    "typescript": "^5",
+    "vitest": "^5.0.4"
   }
 }
