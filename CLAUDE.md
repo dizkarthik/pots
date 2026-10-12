@@ -66,7 +66,7 @@ drizzle/  scripts/seed.ts  middleware.ts
 - Map DB rows to the pure balance input with `toLedger()` (`lib/ledger.ts`); never reimplement balance math in SQL or components.
 - neon-http has no interactive transactions; use `db.batch([...])` when several writes must succeed together.
 - `npm run db:seed` refuses to run on a non-empty DB; `npm run db:seed -- --reset` wipes all app data and reseeds.
-- **Local dev and production currently share the same Neon database** (`neon-champagne-canvas`, main branch). Seed/reset affects the live site too.
+- **Local dev and production share one Neon database by decision** (`neon-champagne-canvas`, main branch). Seed/reset affects the live site too. The seeded sample data must be wiped before real use (part of the Phase 7 deployment checklist); never run `--reset` once real data exists.
 
 ## Commands
 `npm run dev` · `npm test` · `npm run typecheck` · `npm run lint` · `npm run build` · `npm run db:generate` · `npm run db:migrate` · `npm run db:seed` · `npm run db:studio`
