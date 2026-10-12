@@ -1,0 +1,14 @@
+/* App-level semantic tokens that BoardUI doesn't ship. Reference primitives
+ * only, and define both themes, like styles/theme.css. */
+
+:root {
+  --color-overlay-scrim: color-mix(in srgb, var(--color-neutral-950) 40%, transparent);
+}
+
+.dark {
+  --color-overlay-scrim: color-mix(in srgb, var(--color-black) 60%, transparent);
+}
+
+@theme inline {
+  --color-overlay-scrim: var(--color-overlay-scrim);
+}

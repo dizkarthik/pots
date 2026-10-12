@@ -19,6 +19,7 @@
     "@hookform/resolvers": "^5.9.1",
     "@internationalized/date": "^3.12.4",
     "@neondatabase/serverless": "^1.2.0",
+    "@remixicon/react": "^4.9.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
     "drizzle-orm": "^0.45.4",
