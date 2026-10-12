@@ -17,6 +17,8 @@ Single-user app. Desktop-first; layouts use flex/grid so mobile can be polished 
 - **EvilCharts** (charts, Recharts engine) and **beUI** (motion) come from shadcn registries: `npx shadcn@latest add @evilcharts/recharts-<chart>` / `@beui/<name>`.
 - `styles/shadcn-bridge.css` maps shadcn variables (`--background`, `--muted`, `--chart-N`, …) onto BoardUI tokens. Never put raw colours there. `components.json` points shadcn at that file.
 - `lib/utils.ts` re-exports `cx` as `cn`. **beUI registry items ship their own `lib/utils.ts`** — after adding one, restore ours (`git checkout lib/utils.ts`).
+- BoardUI `HintText` only works inside a React Aria text field (it renders a RAC `Text` slot). Next to `Select` / `DatePicker`, use `components/shared/field-error.tsx`.
+- List pages keep search/filter/sort in the URL via `components/shared/list-toolbar.tsx`; parse params defensively in `lib/filters/*`.
 - Animations: subtle, ≤ 250ms, and must respect `prefers-reduced-motion`.
 
 ## Business rules (do not break)
