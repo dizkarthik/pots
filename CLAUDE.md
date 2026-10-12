@@ -12,7 +12,8 @@ Single-user app. Desktop-first; layouts use flex/grid so mobile can be polished 
 - Tests: Vitest.
 
 ## UI system
-- **BoardUI is primary** (React Aria + BoardUI tokens). Follow AGENTS.md: semantic tokens only, composite type utilities, `cx()` from `@/utils/cx`, Remix icons. Add components with `npx boardui@latest add <name>`.
+- **BoardUI is primary** (React Aria + BoardUI tokens). Follow AGENTS.md: semantic tokens only, composite type utilities, `cx()` from `@/utils/cx`. Add components with `npx boardui@latest add <name>`.
+- **Icons: Lucide only** (`lucide-react`, https://lucide.dev) — this overrides AGENTS.md's Remix rule. Pass icons as component references (`leadingIcon={Plus}`). BoardUI ships components with `@remixicon/react` imports: after every `boardui add`, convert them to Lucide equivalents and `npm uninstall @remixicon/react` if it was re-added. Alias on name clashes (e.g. `Calendar as CalendarIcon` next to React Aria's `Calendar`).
 - **EvilCharts** (charts, Recharts engine) and **beUI** (motion) come from shadcn registries: `npx shadcn@latest add @evilcharts/recharts-<chart>` / `@beui/<name>`.
 - `styles/shadcn-bridge.css` maps shadcn variables (`--background`, `--muted`, `--chart-N`, …) onto BoardUI tokens. Never put raw colours there. `components.json` points shadcn at that file.
 - `lib/utils.ts` re-exports `cx` as `cn`. **beUI registry items ship their own `lib/utils.ts`** — after adding one, restore ours (`git checkout lib/utils.ts`).

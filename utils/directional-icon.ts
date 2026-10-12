@@ -1,16 +1,16 @@
 import {
-  RiArrowLeftLine,
-  RiArrowLeftSLine,
-  RiArrowRightLine,
-  RiArrowRightSLine,
-  RiSidebarFoldLine,
-  RiSidebarUnfoldLine,
-} from "@remixicon/react";
+  ArrowLeft,
+  ChevronLeft,
+  ArrowRight,
+  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 
 /** Navigation glyphs mirror; logos, media controls and trend arrows do not. */
 const directionalIcons: ReadonlySet<unknown> = new Set([
-  RiArrowLeftLine, RiArrowLeftSLine, RiArrowRightLine, RiArrowRightSLine,
-  RiSidebarFoldLine, RiSidebarUnfoldLine,
+  ArrowLeft, ChevronLeft, ArrowRight, ChevronRight,
+  PanelLeftClose, PanelLeftOpen,
 ]);
 
 export function directionalIconClass(icon: unknown): string | undefined {

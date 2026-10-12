@@ -4,13 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ComponentType, type ReactNode } from "react";
 import {
-  RiBankLine,
-  RiDashboardLine,
-  RiLogoutBoxRLine,
-  RiReceiptLine,
-  RiSafe2Line,
-  RiSideBarFill,
-} from "@remixicon/react";
+  Landmark,
+  LayoutDashboard,
+  LogOut,
+  Receipt,
+  Vault,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 import { ThemeToggle } from "@/components/application/theme/theme-toggle";
 import { logout } from "@/lib/actions/auth";
 import { cx } from "@/utils/cx";
@@ -23,10 +24,10 @@ import { SIDEBAR_COOKIE } from "./constants";
 type IconComponent = ComponentType<{ className?: string; "aria-hidden"?: boolean | "true" | "false" }>;
 
 const NAV: { href: string; label: string; icon: IconComponent }[] = [
-  { href: "/", label: "Dashboard", icon: RiDashboardLine },
-  { href: "/expenses", label: "Expenses", icon: RiReceiptLine },
-  { href: "/pots", label: "Pots", icon: RiSafe2Line },
-  { href: "/lockers", label: "Lockers", icon: RiBankLine },
+  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/expenses", label: "Expenses", icon: Receipt },
+  { href: "/pots", label: "Pots", icon: Vault },
+  { href: "/lockers", label: "Lockers", icon: Landmark },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -88,7 +89,11 @@ export function AppSidebar({ initialCollapsed = false }: { initialCollapsed?: bo
             aria-expanded={!collapsed}
             className="flex size-9 cursor-pointer items-center justify-center rounded-2lg text-foreground-icon-secondary outline-none hover:bg-background-secondary-hover focus-visible:ring-2 focus-visible:ring-border-focus-ring"
           >
-            <RiSideBarFill className={cx("size-5", !collapsed && "-scale-x-100")} aria-hidden />
+            {collapsed ? (
+              <PanelLeftOpen className="size-5" aria-hidden />
+            ) : (
+              <PanelLeftClose className="size-5" aria-hidden />
+            )}
           </button>
         </div>
 
@@ -137,7 +142,7 @@ export function AppSidebar({ initialCollapsed = false }: { initialCollapsed?: bo
             title={collapsed ? "Sign out" : undefined}
             className={rowClass(collapsed)}
           >
-            <RiLogoutBoxRLine className="size-5 shrink-0 text-foreground-icon-secondary" aria-hidden />
+            <LogOut className="size-5 shrink-0 text-foreground-icon-secondary" aria-hidden />
             <Collapsible collapsed={collapsed}>
               <span className="text-body-medium whitespace-nowrap text-text-secondary">Sign out</span>
             </Collapsible>

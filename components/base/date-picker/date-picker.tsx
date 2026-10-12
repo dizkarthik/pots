@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 import { Calendar, Dialog, Popover, useLocale } from "react-aria-components";
 import type { CalendarDate } from "@internationalized/date";
-import { RiCalendarLine } from "@remixicon/react";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Button } from "@/components/base/buttons/button";
 import {
@@ -128,7 +128,7 @@ export function DatePicker({
           onClick={() => openChange(!isOpen)}
           className={cx(triggerButtonClassName, className)}
         >
-          <RiCalendarLine className="size-5 shrink-0 text-foreground-icon-primary" aria-hidden />
+          <CalendarIcon className="size-5 shrink-0 text-foreground-icon-primary" aria-hidden />
           <span className="flex items-center justify-center whitespace-nowrap px-1 text-body-medium text-text-primary">
             {committedValue ? formatTriggerDate(committedValue, locale) : "Select date"}
           </span>

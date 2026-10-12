@@ -3,7 +3,7 @@
 import { useTemplateCopy } from "@/components/foundations/template-copy/template-copy";
 
 import { useEffect, useRef, useState } from "react";
-import { RiArrowLeftLine, RiArrowRightLine } from "@remixicon/react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/base/buttons/button";
 import { cx } from "@/utils/cx";
 
@@ -117,7 +117,7 @@ export function Pagination({
         variant="secondary"
         size="small"
         iconOnly={isCompact}
-        leadingIcon={RiArrowLeftLine}
+        leadingIcon={ArrowLeft}
         aria-label={isCompact ? previousLabel : undefined}
         disabled={page <= 1}
         onClick={() => onChange(page - 1)}
@@ -161,8 +161,8 @@ export function Pagination({
         variant="secondary"
         size="small"
         iconOnly={isCompact}
-        leadingIcon={isCompact ? RiArrowRightLine : undefined}
-        trailingIcon={isCompact ? undefined : RiArrowRightLine}
+        leadingIcon={isCompact ? ArrowRight : undefined}
+        trailingIcon={isCompact ? undefined : ArrowRight}
         aria-label={isCompact ? nextLabel : undefined}
         disabled={page >= totalPages}
         onClick={() => onChange(page + 1)}

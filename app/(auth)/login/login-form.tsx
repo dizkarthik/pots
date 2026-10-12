@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { RiLockPasswordLine } from "@remixicon/react";
+import { LockKeyhole } from "lucide-react";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { login, type LoginState } from "@/lib/actions/auth";
@@ -22,7 +22,7 @@ export function LoginForm({ next }: { next?: string }) {
         // validity and block the browser from resubmitting the form.
         validationBehavior="aria"
         autoComplete="current-password"
-        leadingIcon={RiLockPasswordLine}
+        leadingIcon={LockKeyhole}
         isInvalid={Boolean(state.error)}
         hint={state.error}
       />
