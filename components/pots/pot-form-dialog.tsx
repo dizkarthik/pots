@@ -6,11 +6,11 @@ import { Controller, useForm } from "react-hook-form";
 import { Radio, RadioGroup } from "react-aria-components";
 import { Chip } from "@/components/base/badges/chip";
 import { Button } from "@/components/base/buttons/button";
-import { HintText } from "@/components/base/input/hint-text";
 import { Input } from "@/components/base/input/input";
 import { Label } from "@/components/base/input/label";
 import { Select, SelectItem } from "@/components/base/select/select";
 import { Dialog } from "@/components/shared/dialog";
+import { FieldError } from "@/components/shared/field-error";
 import { createPot, updatePot } from "@/lib/actions/pots";
 import type { ActionResult } from "@/lib/actions/result";
 import { formatINR, paiseToInput } from "@/lib/money";
@@ -127,7 +127,7 @@ export function PotFormDialog({
                     </SelectItem>
                   ))}
                 </Select>
-                {fieldState.error && <HintText isInvalid>{fieldState.error.message}</HintText>}
+                <FieldError>{fieldState.error?.message}</FieldError>
               </div>
             )}
           />

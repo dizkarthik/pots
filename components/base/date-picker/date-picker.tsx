@@ -56,6 +56,9 @@ export interface DatePickerProps {
   triggerRef?: RefObject<HTMLElement | null>;
   isOpen?: boolean;
   onOpenChange?: (isOpen: boolean) => void;
+  /** Earliest / latest selectable dates (app addition). */
+  minValue?: CalendarDate;
+  maxValue?: CalendarDate;
 }
 
 export function DatePicker({
@@ -68,6 +71,8 @@ export function DatePicker({
   triggerRef: externalTriggerRef,
   isOpen: controlledIsOpen,
   onOpenChange: controlledOnOpenChange,
+  minValue,
+  maxValue,
 }: DatePickerProps) {
   const localize = useTemplateCopy();
   const { locale } = useLocale();
@@ -145,7 +150,7 @@ export function DatePicker({
         className={popoverClassName}
       >
         <Dialog aria-label={ariaLabel} className="outline-none">
-          <Calendar key={openKey} aria-label={ariaLabel} value={pendingValue} onChange={setPendingValue}>
+          <Calendar key={openKey} aria-label={ariaLabel} value={pendingValue} onChange={setPendingValue} minValue={minValue} maxValue={maxValue}>
             <div className="flex flex-col pt-2 pe-2 pb-3 ps-2">
               <MonthPanel offset={0} showPrev showNext />
               <div className="flex items-center justify-between pt-3 pe-4 ps-4">

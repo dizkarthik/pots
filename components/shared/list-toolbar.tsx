@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
+import { useEffect, useRef, useState, useTransition, type ComponentProps, type ReactNode } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/base/input/input";
 import { Select, SelectItem } from "@/components/base/select/select";
@@ -10,21 +10,29 @@ import { cx } from "@/utils/cx";
 // List state (search, filters, sort) lives in the URL so it survives reloads
 // and can be bookmarked. Pages read searchParams on the server and filter.
 
-export function useSearchParam(name: string) {
+/** Updates several URL params in one navigation; null or "" removes a param. */
+export function useSetSearchParams() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  const set = (value: string | null) => {
+  const setMany = (updates: Record<string, string | null>) => {
     const next = new URLSearchParams(params.toString());
-    if (value === null || value === "") next.delete(name);
-    else next.set(name, value);
+    for (const [name, value] of Object.entries(updates)) {
+      if (value === null || value === "") next.delete(name);
+      else next.set(name, value);
+    }
     const query = next.toString();
     startTransition(() => router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false }));
   };
 
-  return { value: params.get(name), set, isPending };
+  return { params, setMany, isPending };
+}
+
+export function useSearchParam(name: string) {
+  const { params, setMany, isPending } = useSetSearchParams();
+  return { value: params.get(name), set: (value: string | null) => setMany({ [name]: value }), isPending };
 }
 
 export function ListToolbar({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
@@ -36,30 +44,49 @@ export function ListToolbar({ children, actions }: { children: ReactNode; action
   );
 }
 
-export function SearchFilter({ placeholder, param = "q" }: { placeholder: string; param?: string }) {
+/** A text input bound to one URL param, debounced while typing. */
+export function ParamInput({
+  param,
+  label,
+  placeholder,
+  className,
+  ...inputProps
+}: { param: string; label: string; placeholder?: string; className?: string } & Pick<
+  ComponentProps<typeof Input>,
+  "leadingIcon" | "leadingAddon" | "type" | "inputMode"
+>) {
   const { value, set } = useSearchParam(param);
   const [text, setText] = useState(value ?? "");
   const setRef = useRef(set);
   setRef.current = set;
 
-  // Debounce URL updates while typing.
+  // Keep in sync when the URL changes elsewhere (e.g. "Clear filters").
+  const [lastValue, setLastValue] = useState(value);
+  if (value !== lastValue) {
+    setLastValue(value);
+    setText(value ?? "");
+  }
+
   useEffect(() => {
-    if (text === (value ?? "")) return;
-    const timer = window.setTimeout(() => setRef.current(text.trim()), 250);
+    if (text.trim() === (value ?? "")) return;
+    const timer = window.setTimeout(() => setRef.current(text.trim()), 300);
     return () => window.clearTimeout(timer);
   }, [text, value]);
 
   return (
     <Input
-      aria-label={placeholder}
-      placeholder={placeholder}
-      leadingIcon={Search}
+      aria-label={label}
+      placeholder={placeholder ?? label}
       value={text}
       onChange={setText}
-      type="search"
-      className="w-full sm:w-64"
+      className={className}
+      {...inputProps}
     />
   );
+}
+
+export function SearchFilter({ placeholder, param = "q" }: { placeholder: string; param?: string }) {
+  return <ParamInput param={param} label={placeholder} leadingIcon={Search} type="search" className="w-full sm:w-64" />;
 }
 
 export interface FilterOption {

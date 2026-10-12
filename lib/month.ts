@@ -92,3 +92,15 @@ export function formatMonth(month: Month, { short = false }: { short?: boolean }
     timeZone: "UTC",
   }).format(new Date(Date.UTC(y, m - 1, 1)));
 }
+
+/** "2026-10-12" → "12 Oct" (or "Mon, 12 Oct" with `weekday`, "12 Oct 2026" with `year`). */
+export function formatDate(isoDate: string, { weekday = false, year = false }: { weekday?: boolean; year?: boolean } = {}): string {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "numeric",
+    month: "short",
+    weekday: weekday ? "short" : undefined,
+    year: year ? "numeric" : undefined,
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(y, m - 1, d)));
+}
