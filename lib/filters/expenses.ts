@@ -1,14 +1,11 @@
-import { toPaise } from "@/lib/money";
 import { compareMonths, currentMonth, firstDayOf, isIsoDate, isMonth, lastDayOf, type Month } from "@/lib/month";
 
 export type ExpenseSearchParams = {
   month?: string;
   from?: string;
   to?: string;
+  /** Comma-separated pot ids (multi-select). */
   pot?: string;
-  account?: string;
-  min?: string;
-  max?: string;
   q?: string;
   sort?: string;
 };
@@ -33,15 +30,14 @@ export interface ExpenseFilters {
   /** Inclusive date bounds actually queried. */
   from: string;
   to: string;
-  potId?: string;
-  accountId?: string;
-  minPaise?: number;
-  maxPaise?: number;
+  /** Empty = all pots. */
+  potIds: string[];
   q?: string;
   sort: { field: ExpenseSortField; direction: "asc" | "desc" };
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MAX_POT_FILTERS = 50;
 
 export function parseExpenseSort(sort: string | undefined): ExpenseFilters["sort"] {
   const [field, direction] = (sort ?? "date-desc").split("-");
@@ -49,6 +45,12 @@ export function parseExpenseSort(sort: string | undefined): ExpenseFilters["sort
     return { field: field as ExpenseSortField, direction };
   }
   return { field: "date", direction: "desc" };
+}
+
+/** "a,b,a,junk" → ["a","b"] keeping only valid, unique UUIDs. */
+export function parsePotIds(value: string | undefined): string[] {
+  if (!value) return [];
+  return [...new Set(value.split(",").filter((id) => UUID_RE.test(id)))].slice(0, MAX_POT_FILTERS);
 }
 
 /** Turns untrusted URL params into safe, typed filters; anything invalid is ignored. */
@@ -60,18 +62,12 @@ export function parseExpenseFilters(sp: ExpenseSearchParams, now = new Date()): 
   const range =
     sp.from && sp.to && isIsoDate(sp.from) && isIsoDate(sp.to) && sp.from <= sp.to ? { from: sp.from, to: sp.to } : null;
 
-  const min = sp.min ? toPaise(sp.min) : null;
-  const max = sp.max ? toPaise(sp.max) : null;
-
   return {
     month,
     range,
     from: range?.from ?? firstDayOf(month),
     to: range?.to ?? lastDayOf(month),
-    potId: sp.pot && UUID_RE.test(sp.pot) ? sp.pot : undefined,
-    accountId: sp.account && UUID_RE.test(sp.account) ? sp.account : undefined,
-    minPaise: min ?? undefined,
-    maxPaise: max ?? undefined,
+    potIds: parsePotIds(sp.pot),
     q: sp.q?.trim() || undefined,
     sort: parseExpenseSort(sp.sort),
   };

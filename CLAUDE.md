@@ -44,6 +44,15 @@ balance(pot, M) = Σ budget in effect for each month m in [pot.start_month, M], 
 - Exception: creating a pot writes its initial budget with `effective_from = start_month` (current month).
 - UI shows current budget, pending "Upcoming" budget (e.g. "₹600 from Nov"), history; edit form helper text "Applies from {next month}".
 
+### Lockers
+- A locker is a bank account identified by its **bank name** (there is no separate locker name).
+- A locker's headline number is **Total balance** = Σ outstanding balances of all its pots (archived included; overspent pots reduce it).
+- `accounts.actual_balance_paise` is currently unused by the UI (the bank-balance comparison was removed on request).
+
+### Expenses
+- Every expense has a required **Payment via** (`payment_methods`). Presets (Cash, UPI, HDFC Credit, RuPay Credit, Debit Card) are inserted by migration 0001 and listed in `lib/payment-methods.ts`; new methods are created on the fly from the expense form ("Create “…”"), unique case-insensitively.
+- Expense list filters: search, multi-select pots (`?pot=id1,id2`), date range, sort. No locker or amount filters.
+
 ## Folder structure
 ```
 app/(auth)/login/          login page + form

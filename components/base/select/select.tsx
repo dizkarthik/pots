@@ -47,8 +47,11 @@ export type SelectSize = "sm" | "md";
 
 const SelectSizeContext = createContext<SelectSize>("md");
 
-export interface SelectProps<T extends object>
-  extends Omit<AriaSelectProps<T>, "children"> {
+// App addition: the `M` generic passes React Aria's `selectionMode="multiple"`
+// through (value becomes a Key[]).
+type AriaSelectionMode = "single" | "multiple";
+export interface SelectProps<T extends object, M extends AriaSelectionMode = "single">
+  extends Omit<AriaSelectProps<T, M>, "children"> {
   /** Trigger width. Defaults to hug content; the menu uses the shared 266px width. */
   className?: string;
   triggerClassName?: string;
@@ -64,7 +67,7 @@ export interface SelectProps<T extends object>
   ref?: Ref<HTMLDivElement>;
 }
 
-export function Select<T extends object>({
+export function Select<T extends object, M extends AriaSelectionMode = "single">({
   className,
   triggerClassName,
   popoverClassName,
@@ -74,7 +77,7 @@ export function Select<T extends object>({
   renderValue,
   ref,
   ...props
-}: SelectProps<T>) {
+}: SelectProps<T, M>) {
   // The popover is `isNonModal`: react-aria's modal scroll lock puts
   // `overflow: hidden` on <html>, which — with this app's `h-full` root —
   // collapses the page scroll position and visibly yanks the sticky

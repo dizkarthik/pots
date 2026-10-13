@@ -16,7 +16,7 @@ import { deleteExpense } from "@/lib/actions/expenses";
 import { EXPENSE_SORT_FIELDS, parseExpenseSort, type ExpenseSortField } from "@/lib/filters/expenses";
 import { formatINR } from "@/lib/money";
 import { formatDate } from "@/lib/month";
-import type { ExpenseRow, PotOption } from "@/lib/queries/expenses";
+import type { ExpenseRow, PaymentMethodOption, PotOption } from "@/lib/queries/expenses";
 import { cx } from "@/utils/cx";
 
 function SortLabel({ label, direction }: { label: string; direction?: "ascending" | "descending" }) {
@@ -35,7 +35,17 @@ function SortLabel({ label, direction }: { label: string; direction?: "ascending
   );
 }
 
-export function ExpensesTable({ rows, pots, today }: { rows: ExpenseRow[]; pots: PotOption[]; today: string }) {
+export function ExpensesTable({
+  rows,
+  pots,
+  paymentMethods,
+  today,
+}: {
+  rows: ExpenseRow[];
+  pots: PotOption[];
+  paymentMethods: PaymentMethodOption[];
+  today: string;
+}) {
   const [editing, setEditing] = useState<ExpenseRow | null>(null);
   const [deleting, setDeleting] = useState<ExpenseRow | null>(null);
   const sort = useSearchParam("sort");
@@ -69,7 +79,7 @@ export function ExpensesTable({ rows, pots, today }: { rows: ExpenseRow[]; pots:
           <TableHeader>
             {sortable("date", "Date", { rowHeader: true })}
             {sortable("pot", "Pot")}
-            <TableColumn>Locker</TableColumn>
+            <TableColumn>Paid via</TableColumn>
             <TableColumn>Note</TableColumn>
             {sortable("amount", "Amount", { end: true })}
             <TableColumn className="w-12">
@@ -91,12 +101,7 @@ export function ExpensesTable({ rows, pots, today }: { rows: ExpenseRow[]; pots:
                     <span className="text-body-medium text-text-primary">{row.potName}</span>
                   </div>
                 </TableCell>
-                <TableCell>
-                  <div className="flex flex-col">
-                    <span className="text-body-regular text-text-primary">{row.accountName}</span>
-                    <span className="text-caption-1-regular text-text-tertiary">{row.bank}</span>
-                  </div>
-                </TableCell>
+                <TableCell className="whitespace-nowrap text-text-secondary">{row.paymentMethodName}</TableCell>
                 <TableCell className="max-w-64 truncate text-text-secondary">{row.note ?? "—"}</TableCell>
                 <TableCell className="text-end">
                   <Money paise={row.amountPaise} className="text-body-medium" />
@@ -115,6 +120,7 @@ export function ExpensesTable({ rows, pots, today }: { rows: ExpenseRow[]; pots:
         onOpenChange={(open) => !open && setEditing(null)}
         expense={editing}
         pots={pots}
+        paymentMethods={paymentMethods}
         today={today}
       />
       <DeleteExpenseDialog expense={deleting} onClose={() => setDeleting(null)} />

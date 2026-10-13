@@ -105,10 +105,7 @@ export function PotsTable({
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="flex flex-col">
-                    <span className="text-body-regular text-text-primary">{pot.accountName}</span>
-                    <span className="text-caption-1-regular text-text-tertiary">{pot.bank}</span>
-                  </div>
+                  <span className="text-body-regular text-text-primary">{pot.bank}</span>
                 </TableCell>
                 <TableCell className="text-end">
                   <div className="flex flex-col items-end gap-0.5">

@@ -24,7 +24,7 @@ export function PotsToolbar({ lockers, month, nextMonth }: { lockers: LockerOpti
         <FilterSelect
           param="account"
           label="Locker"
-          options={[{ value: "all", label: "All lockers" }, ...lockers.map((l) => ({ value: l.id, label: l.name }))]}
+          options={[{ value: "all", label: "All lockers" }, ...lockers.map((l) => ({ value: l.id, label: l.bank }))]}
         />
         <FilterSelect
           param="status"

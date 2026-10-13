@@ -11,17 +11,14 @@ import { Textarea } from "@/components/base/textarea/textarea";
 import { Dialog } from "@/components/shared/dialog";
 import { createAccount, updateAccount } from "@/lib/actions/accounts";
 import type { Account } from "@/lib/db/schema";
-import { paiseToInput } from "@/lib/money";
 import { ACCOUNT_TYPE_LABELS, ACCOUNT_TYPES } from "@/lib/pot-options";
 import { accountFormSchema, type AccountFormValues } from "@/lib/validation/accounts";
 
 function defaults(account: Account | null): AccountFormValues {
   return {
-    name: account?.name ?? "",
     bank: account?.bank ?? "",
     type: account?.type ?? "savings",
     notes: account?.notes ?? "",
-    actualBalance: account?.actualBalancePaise == null ? "" : paiseToInput(account.actualBalancePaise),
   };
 }
 
@@ -59,7 +56,7 @@ export function AccountFormDialog({
     }),
   );
 
-  const text = (name: "name" | "bank", label: string, placeholder: string, autoFocus = false) => (
+  const text = (name: "bank", label: string, placeholder: string, autoFocus = false) => (
     <Controller
       control={control}
       name={name}
@@ -83,16 +80,12 @@ export function AccountFormDialog({
     <Dialog
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      title={account ? `Edit ${account.name}` : "New locker"}
-      description={account ? undefined : "A bank account that holds one or more pots."}
+      title={account ? `Edit ${account.bank}` : "New locker"}
+      description={account ? undefined : "A bank account that holds one or more pots. The bank name is the locker's name."}
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
         <div className="grid gap-4 sm:grid-cols-2">
-          {text("name", "Name", "e.g. Everyday", true)}
-          {text("bank", "Bank", "e.g. HDFC Bank")}
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
+          {text("bank", "Bank name", "e.g. HDFC Bank", true)}
           <Controller
             control={control}
             name="type"
@@ -107,24 +100,6 @@ export function AccountFormDialog({
                   ))}
                 </Select>
               </div>
-            )}
-          />
-          <Controller
-            control={control}
-            name="actualBalance"
-            render={({ field, fieldState }) => (
-              <Input
-                label="Actual bank balance"
-                placeholder="Optional"
-                inputMode="decimal"
-                leadingAddon={<span className="text-body-medium text-text-tertiary">₹</span>}
-                value={field.value}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                isInvalid={fieldState.invalid}
-                hint={fieldState.error?.message ?? "Compared with the sum of pot balances."}
-                validationBehavior="aria"
-              />
             )}
           />
         </div>

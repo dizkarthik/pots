@@ -15,7 +15,7 @@ export interface PotSummary {
   icon: string;
   color: string;
   accountId: string;
-  accountName: string;
+  /** The locker's display name. */
   bank: string;
   startMonth: Month;
   isArchived: boolean;
@@ -41,7 +41,7 @@ export async function getPotSummaries(month: Month = currentMonth()): Promise<{ 
   const db = getDb();
 
   const [accountRows, potRows, budgetRows, periodRows, monthlySpend] = await Promise.all([
-    db.select().from(accounts).orderBy(asc(accounts.name)),
+    db.select().from(accounts).orderBy(asc(accounts.bank)),
     db.select().from(pots).orderBy(asc(pots.name)),
     db.select().from(potBudgets).orderBy(asc(potBudgets.effectiveFrom)),
     db.select().from(potArchivePeriods),
@@ -81,8 +81,7 @@ export async function getPotSummaries(month: Month = currentMonth()): Promise<{ 
       icon: pot.icon,
       color: pot.color,
       accountId: pot.accountId,
-      accountName: account?.name ?? "—",
-      bank: account?.bank ?? "",
+      bank: account?.bank ?? "—",
       startMonth: monthOf(pot.startMonth),
       isArchived: pot.isArchived,
       budget: current?.amountPaise ?? 0,

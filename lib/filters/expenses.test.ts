@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { parseExpenseFilters } from "./expenses";
+import { parseExpenseFilters, parsePotIds } from "./expenses";
 
 const now = new Date("2026-10-12T12:00:00+05:30");
-const POT = "3f2a9c1e-8b7d-4e6f-a1b2-c3d4e5f6a7b8";
+const POT_A = "3f2a9c1e-8b7d-4e6f-a1b2-c3d4e5f6a7b8";
+const POT_B = "9c1e3f2a-4e6f-8b7d-c3d4-a1b2e5f6a7b8";
 
 describe("parseExpenseFilters", () => {
-  it("defaults to the current month, newest first", () => {
+  it("defaults to the current month, all pots, newest first", () => {
     const f = parseExpenseFilters({}, now);
-    expect(f).toMatchObject({ month: "2026-10", range: null, from: "2026-10-01", to: "2026-10-31" });
+    expect(f).toMatchObject({ month: "2026-10", range: null, from: "2026-10-01", to: "2026-10-31", potIds: [] });
     expect(f.sort).toEqual({ field: "date", direction: "desc" });
   });
 
@@ -29,15 +30,22 @@ describe("parseExpenseFilters", () => {
     expect(parseExpenseFilters({ from: "2026-02-30", to: "2026-03-01" }, now).range).toBeNull();
   });
 
-  it("parses amount bounds into paise", () => {
-    expect(parseExpenseFilters({ min: "100", max: "1,500.50" }, now)).toMatchObject({ minPaise: 10000, maxPaise: 150050 });
-    expect(parseExpenseFilters({ min: "abc" }, now).minPaise).toBeUndefined();
+  it("drops unknown sorts", () => {
+    expect(parseExpenseFilters({ sort: "evil-asc" }, now).sort).toEqual({ field: "date", direction: "desc" });
+  });
+});
+
+describe("parsePotIds (multi-select pot filter)", () => {
+  it("reads several comma-separated pots", () => {
+    expect(parsePotIds(`${POT_A},${POT_B}`)).toEqual([POT_A, POT_B]);
   });
 
-  it("drops ids that aren't UUIDs and unknown sorts", () => {
-    const f = parseExpenseFilters({ pot: "'; drop table", account: POT, sort: "evil-asc" }, now);
-    expect(f.potId).toBeUndefined();
-    expect(f.accountId).toBe(POT);
-    expect(f.sort).toEqual({ field: "date", direction: "desc" });
+  it("drops duplicates and anything that isn't a UUID", () => {
+    expect(parsePotIds(`${POT_A},'; drop table,${POT_A},,${POT_B}`)).toEqual([POT_A, POT_B]);
+  });
+
+  it("treats a missing or empty param as all pots", () => {
+    expect(parsePotIds(undefined)).toEqual([]);
+    expect(parsePotIds("")).toEqual([]);
   });
 });

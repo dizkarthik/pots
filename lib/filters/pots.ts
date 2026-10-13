@@ -52,7 +52,7 @@ export function filterAndSortPots(pots: PotSummary[], sp: PotSearchParams): PotS
       if (status === "archived" && !p.isArchived) return false;
       if (sp.account && p.accountId !== sp.account) return false;
       if (sp.overspent === "1" && p.balance >= 0) return false;
-      if (q && !`${p.name} ${p.accountName} ${p.bank}`.toLowerCase().includes(q)) return false;
+      if (q && !`${p.name} ${p.bank}`.toLowerCase().includes(q)) return false;
       return true;
     })
     .sort((a, b) => {

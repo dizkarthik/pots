@@ -10,7 +10,7 @@ export const metadata = { title: "Pots · Pots" };
 export default async function PotsPage({ searchParams }: { searchParams: Promise<PotSearchParams> }) {
   const [params, { month, pots, accounts }] = await Promise.all([searchParams, getPotSummaries()]);
   const nextMonth = addMonths(month, 1);
-  const lockers = accounts.map((a) => ({ id: a.id, name: a.name, bank: a.bank }));
+  const lockers = accounts.map((a) => ({ id: a.id, bank: a.bank }));
   const visible = filterAndSortPots(pots, params);
 
   return (

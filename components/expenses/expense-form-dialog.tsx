@@ -9,19 +9,26 @@ import { DatePicker } from "@/components/base/date-picker/date-picker";
 import { Input } from "@/components/base/input/input";
 import { Label } from "@/components/base/input/label";
 import { Select, SelectItem } from "@/components/base/select/select";
+import { PaymentMethodField } from "@/components/expenses/payment-method-field";
 import { PotTile } from "@/components/pots/pot-tile";
 import { Dialog } from "@/components/shared/dialog";
 import { FieldError } from "@/components/shared/field-error";
 import { createExpense, updateExpense } from "@/lib/actions/expenses";
 import { paiseToInput } from "@/lib/money";
-import type { ExpenseRow, PotOption } from "@/lib/queries/expenses";
+import type { ExpenseRow, PaymentMethodOption, PotOption } from "@/lib/queries/expenses";
 import { expenseFormSchema, type ExpenseFormValues } from "@/lib/validation/expenses";
 
 function defaults(expense: ExpenseRow | null, today: string, defaultPotId?: string): ExpenseFormValues {
   if (expense) {
-    return { date: expense.date, amount: paiseToInput(expense.amountPaise), potId: expense.potId, note: expense.note ?? "" };
+    return {
+      date: expense.date,
+      amount: paiseToInput(expense.amountPaise),
+      potId: expense.potId,
+      paymentMethodId: expense.paymentMethodId,
+      note: expense.note ?? "",
+    };
   }
-  return { date: today, amount: "", potId: defaultPotId ?? "", note: "" };
+  return { date: today, amount: "", potId: defaultPotId ?? "", paymentMethodId: "", note: "" };
 }
 
 export function ExpenseFormDialog({
@@ -29,6 +36,7 @@ export function ExpenseFormDialog({
   onOpenChange,
   expense,
   pots,
+  paymentMethods,
   today,
   defaultPotId,
 }: {
@@ -37,6 +45,7 @@ export function ExpenseFormDialog({
   /** null = add a new expense. */
   expense: ExpenseRow | null;
   pots: PotOption[];
+  paymentMethods: PaymentMethodOption[];
   /** Today in India time, from the server. */
   today: string;
   defaultPotId?: string;
@@ -127,12 +136,24 @@ export function ExpenseFormDialog({
                   <SelectItem key={p.id} id={p.id} textValue={p.name}>
                     <PotTile icon={p.icon} color={p.color} className="size-6 rounded-lg [&_svg]:size-3.5" />
                     {p.name}
-                    <span className="text-text-tertiary">· {p.accountName}</span>
                   </SelectItem>
                 ))}
               </Select>
               <FieldError>{fieldState.error?.message}</FieldError>
             </div>
+          )}
+        />
+
+        <Controller
+          control={control}
+          name="paymentMethodId"
+          render={({ field, fieldState }) => (
+            <PaymentMethodField
+              methods={paymentMethods}
+              value={field.value}
+              onChange={field.onChange}
+              error={fieldState.error?.message}
+            />
           )}
         />
 

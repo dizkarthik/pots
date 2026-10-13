@@ -22,7 +22,6 @@ import { cx } from "@/utils/cx";
 
 export interface LockerOption {
   id: string;
-  name: string;
   bank: string;
 }
 
@@ -122,8 +121,8 @@ export function PotFormDialog({
                   isInvalid={fieldState.invalid}
                 >
                   {lockers.map((l) => (
-                    <SelectItem key={l.id} id={l.id} textValue={l.name}>
-                      {l.name} <span className="text-text-tertiary">· {l.bank}</span>
+                    <SelectItem key={l.id} id={l.id}>
+                      {l.bank}
                     </SelectItem>
                   ))}
                 </Select>

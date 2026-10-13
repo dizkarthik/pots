@@ -6,17 +6,14 @@ import { z } from "zod";
 import { requireSession } from "@/lib/auth";
 import { getDb } from "@/lib/db/client";
 import { accounts } from "@/lib/db/schema";
-import { toPaise } from "@/lib/money";
 import { accountFormSchema, type AccountFormValues } from "@/lib/validation/accounts";
 import { failed, invalid, type ActionResult } from "./result";
 
 function toRow(values: AccountFormValues) {
   return {
-    name: values.name,
     bank: values.bank,
     type: values.type,
     notes: values.notes === "" ? null : values.notes,
-    actualBalancePaise: values.actualBalance === "" ? null : toPaise(values.actualBalance)!,
   };
 }
 

@@ -24,9 +24,9 @@ const firstOfMonth = (column: string) => sql.raw(`extract(day from ${column}) = 
 
 export const accountType = pgEnum("account_type", ["savings", "current", "salary", "other"]);
 
+/** A locker. The bank name is its display name (there is no separate name). */
 export const accounts = pgTable("accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
   bank: text("bank").notNull(),
   type: accountType("type").notNull().default("savings"),
   notes: text("notes"),
@@ -103,6 +103,21 @@ export const potBudgets = pgTable(
   ],
 );
 
+/**
+ * How an expense was paid (Cash, UPI, a card…). Presets are inserted by the
+ * migration; new ones are created on the fly from the expense form.
+ * Names are unique case-insensitively.
+ */
+export const paymentMethods = pgTable(
+  "payment_methods",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("payment_methods_name_ci").on(sql`lower(${t.name})`)],
+);
+
 export const expenses = pgTable(
   "expenses",
   {
@@ -113,6 +128,9 @@ export const expenses = pgTable(
       .notNull()
       .references(() => pots.id, { onDelete: "restrict" }),
     note: text("note"),
+    paymentMethodId: uuid("payment_method_id")
+      .notNull()
+      .references(() => paymentMethods.id, { onDelete: "restrict" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -127,3 +145,4 @@ export type Pot = typeof pots.$inferSelect;
 export type PotBudget = typeof potBudgets.$inferSelect;
 export type PotArchivePeriod = typeof potArchivePeriods.$inferSelect;
 export type Expense = typeof expenses.$inferSelect;
+export type PaymentMethod = typeof paymentMethods.$inferSelect;

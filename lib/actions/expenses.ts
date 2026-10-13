@@ -1,14 +1,15 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
 import { getDb } from "@/lib/db/client";
-import { expenses, pots } from "@/lib/db/schema";
+import { expenses, paymentMethods, pots } from "@/lib/db/schema";
 import { toPaise } from "@/lib/money";
 import { compareMonths, formatMonth, monthOf, todayIso } from "@/lib/month";
-import { expenseFormSchema, type ExpenseFormValues } from "@/lib/validation/expenses";
+import { normalizePaymentMethodName } from "@/lib/payment-methods";
+import { expenseFormSchema, paymentMethodNameSchema, type ExpenseFormValues } from "@/lib/validation/expenses";
 import { failed, invalid, type ActionResult } from "./result";
 
 const idSchema = z.uuid();
@@ -29,6 +30,13 @@ async function check(values: ExpenseFormValues, previousPotId?: string): Promise
   if (pot.isArchived && values.potId !== previousPotId) {
     return { ok: false, error: "Please fix the highlighted fields.", fieldErrors: { potId: "This pot is archived" } };
   }
+  const [method] = await getDb()
+    .select({ id: paymentMethods.id })
+    .from(paymentMethods)
+    .where(eq(paymentMethods.id, values.paymentMethodId));
+  if (!method) {
+    return { ok: false, error: "Please fix the highlighted fields.", fieldErrors: { paymentMethodId: "Choose how you paid" } };
+  }
   const start = monthOf(pot.startMonth);
   if (compareMonths(monthOf(values.date), start) < 0) {
     return {
@@ -45,6 +53,7 @@ function toRow(values: ExpenseFormValues) {
     date: values.date,
     amountPaise: toPaise(values.amount)!,
     potId: values.potId,
+    paymentMethodId: values.paymentMethodId,
     note: values.note === "" ? null : values.note,
   };
 }
@@ -88,4 +97,35 @@ export async function deleteExpense(expenseId: unknown): Promise<ActionResult> {
   await getDb().delete(expenses).where(eq(expenses.id, id.data));
   revalidatePath("/", "layout");
   return { ok: true };
+}
+
+export type CreatePaymentMethodResult = { ok: true; id: string; name: string } | { ok: false; error: string };
+
+/**
+ * Adds a payment method from the expense form ("Create “Jupiter Card”").
+ * Names are unique case-insensitively, so an existing match is returned
+ * instead of creating a near-duplicate.
+ */
+export async function createPaymentMethod(input: unknown): Promise<CreatePaymentMethodResult> {
+  await requireSession();
+  const parsed = paymentMethodNameSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid name" };
+  const name = normalizePaymentMethodName(parsed.data);
+
+  const db = getDb();
+  const [inserted] = await db
+    .insert(paymentMethods)
+    .values({ name })
+    .onConflictDoNothing()
+    .returning({ id: paymentMethods.id, name: paymentMethods.name });
+  if (inserted) {
+    revalidatePath("/expenses");
+    return { ok: true, ...inserted };
+  }
+
+  const [existing] = await db
+    .select({ id: paymentMethods.id, name: paymentMethods.name })
+    .from(paymentMethods)
+    .where(eq(sql`lower(${paymentMethods.name})`, name.toLowerCase()));
+  return existing ? { ok: true, ...existing } : { ok: false, error: "Couldn't save that payment method." };
 }

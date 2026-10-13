@@ -1,9 +1,9 @@
 import "server-only";
 
-import { and, asc, desc, eq, gte, ilike, lte, or, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, inArray, lte, or, type SQL } from "drizzle-orm";
 import { requireSession } from "@/lib/auth";
 import { getDb } from "@/lib/db/client";
-import { accounts, expenses, pots } from "@/lib/db/schema";
+import { expenses, paymentMethods, pots } from "@/lib/db/schema";
 import type { ExpenseFilters } from "@/lib/filters/expenses";
 import { monthOf, type Month } from "@/lib/month";
 
@@ -16,9 +16,8 @@ export interface ExpenseRow {
   potName: string;
   potIcon: string;
   potColor: string;
-  accountId: string;
-  accountName: string;
-  bank: string;
+  paymentMethodId: string;
+  paymentMethodName: string;
 }
 
 export interface PotOption {
@@ -26,9 +25,13 @@ export interface PotOption {
   name: string;
   icon: string;
   color: string;
-  accountName: string;
   startMonth: Month;
   isArchived: boolean;
+}
+
+export interface PaymentMethodOption {
+  id: string;
+  name: string;
 }
 
 /** Escapes LIKE wildcards so a search for "50%" matches literally. */
@@ -41,10 +44,7 @@ export async function getExpenses(filters: ExpenseFilters) {
   const db = getDb();
 
   const where: SQL[] = [gte(expenses.date, filters.from), lte(expenses.date, filters.to)];
-  if (filters.potId) where.push(eq(expenses.potId, filters.potId));
-  if (filters.accountId) where.push(eq(pots.accountId, filters.accountId));
-  if (filters.minPaise !== undefined) where.push(gte(expenses.amountPaise, filters.minPaise));
-  if (filters.maxPaise !== undefined) where.push(lte(expenses.amountPaise, filters.maxPaise));
+  if (filters.potIds.length) where.push(inArray(expenses.potId, filters.potIds));
   if (filters.q) {
     const pattern = likePattern(filters.q);
     where.push(or(ilike(expenses.note, pattern), ilike(pots.name, pattern))!);
@@ -67,13 +67,12 @@ export async function getExpenses(filters: ExpenseFilters) {
       potName: pots.name,
       potIcon: pots.icon,
       potColor: pots.color,
-      accountId: accounts.id,
-      accountName: accounts.name,
-      bank: accounts.bank,
+      paymentMethodId: paymentMethods.id,
+      paymentMethodName: paymentMethods.name,
     })
     .from(expenses)
     .innerJoin(pots, eq(pots.id, expenses.potId))
-    .innerJoin(accounts, eq(accounts.id, pots.accountId))
+    .innerJoin(paymentMethods, eq(paymentMethods.id, expenses.paymentMethodId))
     .where(and(...where))
     .orderBy(...orderBy);
 
@@ -83,30 +82,28 @@ export async function getExpenses(filters: ExpenseFilters) {
   };
 }
 
-/** Pots and lockers for filter menus and the expense form. */
+/** Pots and payment methods for the filter menu and the expense form. */
 export async function getExpenseOptions() {
   await requireSession();
   const db = getDb();
-  const [potRows, accountRows] = await Promise.all([
+  const [potRows, methodRows] = await Promise.all([
     db
       .select({
         id: pots.id,
         name: pots.name,
         icon: pots.icon,
         color: pots.color,
-        accountName: accounts.name,
         startMonth: pots.startMonth,
         isArchived: pots.isArchived,
       })
       .from(pots)
-      .innerJoin(accounts, eq(accounts.id, pots.accountId))
       .orderBy(asc(pots.name)),
-    db.select({ id: accounts.id, name: accounts.name }).from(accounts).orderBy(asc(accounts.name)),
+    // Presets first (they were created first), then ones added later.
+    db.select({ id: paymentMethods.id, name: paymentMethods.name }).from(paymentMethods).orderBy(asc(paymentMethods.createdAt)),
   ]);
 
   return {
     pots: potRows.map((p): PotOption => ({ ...p, startMonth: monthOf(p.startMonth) })),
-    accounts: accountRows,
+    paymentMethods: methodRows satisfies PaymentMethodOption[],
   };
 }
-

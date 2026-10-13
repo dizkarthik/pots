@@ -17,7 +17,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
   return (
     <>
       <PageHeader title="Expenses" description="Everything you've spent, month by month." />
-      <ExpensesToolbar pots={options.pots} lockers={options.accounts} range={filters.range} today={today} />
+      <ExpensesToolbar pots={options.pots} paymentMethods={options.paymentMethods} range={filters.range} today={today} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <MonthSwitcher month={filters.month} currentMonth={currentMonth()} range={filters.range} />
         <p className="text-body-regular text-text-secondary" aria-live="polite">
@@ -25,7 +25,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
           <span className="text-body-medium text-text-primary">{formatINR(totalPaise)}</span>
         </p>
       </div>
-      <ExpensesTable rows={rows} pots={options.pots} today={today} />
+      <ExpensesTable rows={rows} pots={options.pots} paymentMethods={options.paymentMethods} today={today} />
     </>
   );
 }
