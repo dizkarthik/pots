@@ -52,6 +52,7 @@ balance(pot, M) = Σ budget in effect for each month m in [pot.start_month, M], 
 ### Expenses
 - Every expense has a required **Payment via** (`payment_methods`). Presets (Cash, UPI, HDFC Credit, RuPay Credit, Debit Card) are inserted by migration 0001 and listed in `lib/payment-methods.ts`; new methods are created on the fly from the expense form ("Create “…”"), unique case-insensitively.
 - Expense list filters: search, multi-select pots (`?pot=id1,id2`), date range, sort. No locker or amount filters.
+- Payment methods can belong to a locker (`payment_methods.account_id`): each bank locker has "[Locker] Card" and "[Locker] UPI" (all except Millennia, Amazon Pay, Cash, Folders). Generic methods have no locker. This link is backend-only for now (not shown on locker cards).
 
 ## Folder structure
 ```

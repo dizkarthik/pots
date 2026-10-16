@@ -103,15 +103,22 @@ export const potBudgets = pgTable(
  * How an expense was paid (Cash, UPI, a card…). Presets are inserted by the
  * migration; new ones are created on the fly from the expense form.
  * Names are unique case-insensitively.
+ *
+ * A method may belong to a locker (e.g. "HDFC Card" and "HDFC UPI" are sub
+ * payment methods of the HDFC locker); generic ones have no locker.
  */
 export const paymentMethods = pgTable(
   "payment_methods",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
+    accountId: uuid("account_id").references(() => accounts.id, { onDelete: "restrict" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex("payment_methods_name_ci").on(sql`lower(${t.name})`)],
+  (t) => [
+    uniqueIndex("payment_methods_name_ci").on(sql`lower(${t.name})`),
+    index("payment_methods_account_idx").on(t.accountId),
+  ],
 );
 
 export const expenses = pgTable(

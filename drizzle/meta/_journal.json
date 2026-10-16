@@ -22,6 +22,13 @@
       "when": 1792161880569,
       "tag": "0002_drop_locker_type",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792162355150,
+      "tag": "0003_payment_method_locker",
+      "breakpoints": true
     }
   ]
 }
