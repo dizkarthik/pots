@@ -45,7 +45,7 @@ balance(pot, M) = Σ budget in effect for each month m in [pot.start_month, M], 
 - UI shows current budget, pending "Upcoming" budget (e.g. "₹600 from Nov"), history; edit form helper text "Applies from {next month}".
 
 ### Lockers
-- A locker is a bank account identified by its **bank name** (there is no separate locker name).
+- A locker is a bank account, credit card, wallet or cash, identified by its name (stored in `accounts.bank`; there is no separate name and **no type/category** — Savings/Current/etc. were removed on request).
 - A locker's headline number is **Total balance** = Σ outstanding balances of all its pots (archived included; overspent pots reduce it).
 - `accounts.actual_balance_paise` is currently unused by the UI (the bank-balance comparison was removed on request).
 
@@ -77,7 +77,8 @@ drizzle/  scripts/seed.ts  middleware.ts
 - Map DB rows to the pure balance input with `toLedger()` (`lib/ledger.ts`); never reimplement balance math in SQL or components.
 - neon-http has no interactive transactions; use `db.batch([...])` when several writes must succeed together.
 - `npm run db:seed` refuses to run on a non-empty DB; `npm run db:seed -- --reset` wipes all app data and reseeds.
-- **Local dev and production share one Neon database by decision** (`neon-champagne-canvas`, main branch). Seed/reset affects the live site too. The seeded sample data must be wiped before real use (part of the Phase 7 deployment checklist); never run `--reset` once real data exists.
+- **Local dev and production share one Neon database by decision** (`neon-champagne-canvas`, main branch). Anything done locally affects the live site.
+- **The database now holds the user's REAL lockers (sample data was wiped on 2026-10-16). Never run `npm run db:seed -- --reset` or bulk-delete data.** Test against the real DB only with clearly marked rows you remove afterwards, or ask first.
 
 ## Commands
 `npm run dev` · `npm test` · `npm run typecheck` · `npm run lint` · `npm run build` · `npm run db:generate` · `npm run db:migrate` · `npm run db:seed` · `npm run db:studio`

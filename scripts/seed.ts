@@ -66,11 +66,11 @@ type PotSeed = {
 };
 
 const ACCOUNTS = [
-  { key: "hdfc", bank: "HDFC Bank", type: "salary", notes: "Salary credit on the 1st" },
-  { key: "icici", bank: "ICICI Bank", type: "savings", notes: "Utilities and subscriptions" },
-  { key: "sbi", bank: "SBI", type: "savings", notes: null },
-  { key: "axis", bank: "Axis Bank", type: "current", notes: null },
-  { key: "kotak", bank: "Kotak 811", type: "savings", notes: "Sinking funds" },
+  { key: "hdfc", bank: "HDFC Bank", notes: "Salary credit on the 1st" },
+  { key: "icici", bank: "ICICI Bank", notes: "Utilities and subscriptions" },
+  { key: "sbi", bank: "SBI", notes: null },
+  { key: "axis", bank: "Axis Bank", notes: null },
+  { key: "kotak", bank: "Kotak 811", notes: "Sinking funds" },
 ] as const;
 
 const GROCERY = ["BigBasket", "DMart", "Zepto", "Local kirana", "Blinkit", "Nature's Basket"];
@@ -178,7 +178,7 @@ async function main() {
   for (const a of ACCOUNTS) {
     const [row] = await db
       .insert(accounts)
-      .values({ bank: a.bank, type: a.type, notes: a.notes })
+      .values({ bank: a.bank, notes: a.notes })
       .returning({ id: accounts.id });
     accountIds.set(a.key, row.id);
   }

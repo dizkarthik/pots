@@ -81,12 +81,3 @@ export const POT_COLOR_CLASSES: Record<PotColor, { swatch: string; tile: string 
 export function potColorClasses(color: string) {
   return POT_COLOR_CLASSES[color as PotColor] ?? POT_COLOR_CLASSES["chart-1"];
 }
-
-export const ACCOUNT_TYPES = ["savings", "current", "salary", "other"] as const;
-export type AccountType = (typeof ACCOUNT_TYPES)[number];
-export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
-  savings: "Savings",
-  current: "Current",
-  salary: "Salary",
-  other: "Other",
-};

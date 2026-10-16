@@ -19,11 +19,11 @@ export function summariseLockers(accounts: Account[], pots: PotSummary[]): Locke
   });
 }
 
-export type LockerSearchParams = { q?: string; type?: string; sort?: string };
+export type LockerSearchParams = { q?: string; sort?: string };
 
 export const LOCKER_SORT_OPTIONS = [
-  { value: "name-asc", label: "Bank (A–Z)" },
-  { value: "name-desc", label: "Bank (Z–A)" },
+  { value: "name-asc", label: "Name (A–Z)" },
+  { value: "name-desc", label: "Name (Z–A)" },
   { value: "balance-desc", label: "Total balance: high to low" },
   { value: "balance-asc", label: "Total balance: low to high" },
 ];
@@ -35,7 +35,6 @@ export function filterAndSortLockers(lockers: LockerSummary[], sp: LockerSearchP
 
   return lockers
     .filter((l) => {
-      if (sp.type && l.account.type !== sp.type) return false;
       if (q) {
         const haystack = [l.account.bank, ...l.pots.map((p) => p.name)].join(" ").toLowerCase();
         if (!haystack.includes(q)) return false;

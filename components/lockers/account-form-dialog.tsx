@@ -5,19 +5,15 @@ import { useEffect, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
-import { Label } from "@/components/base/input/label";
-import { Select, SelectItem } from "@/components/base/select/select";
 import { Textarea } from "@/components/base/textarea/textarea";
 import { Dialog } from "@/components/shared/dialog";
 import { createAccount, updateAccount } from "@/lib/actions/accounts";
 import type { Account } from "@/lib/db/schema";
-import { ACCOUNT_TYPE_LABELS, ACCOUNT_TYPES } from "@/lib/pot-options";
 import { accountFormSchema, type AccountFormValues } from "@/lib/validation/accounts";
 
 function defaults(account: Account | null): AccountFormValues {
   return {
     bank: account?.bank ?? "",
-    type: account?.type ?? "savings",
     notes: account?.notes ?? "",
   };
 }
@@ -81,28 +77,10 @@ export function AccountFormDialog({
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       title={account ? `Edit ${account.bank}` : "New locker"}
-      description={account ? undefined : "A bank account that holds one or more pots. The bank name is the locker's name."}
+      description={account ? undefined : "A bank account, card or cash that holds one or more pots."}
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {text("bank", "Bank name", "e.g. HDFC Bank", true)}
-          <Controller
-            control={control}
-            name="type"
-            render={({ field }) => (
-              <div className="flex flex-col gap-1.5">
-                <Label>Type</Label>
-                <Select aria-label="Type" selectedKey={field.value} onSelectionChange={(k) => field.onChange(String(k))}>
-                  {ACCOUNT_TYPES.map((t) => (
-                    <SelectItem key={t} id={t}>
-                      {ACCOUNT_TYPE_LABELS[t]}
-                    </SelectItem>
-                  ))}
-                </Select>
-              </div>
-            )}
-          />
-        </div>
+        {text("bank", "Name", "e.g. HDFC, Millennia, Cash", true)}
 
         <Controller
           control={control}

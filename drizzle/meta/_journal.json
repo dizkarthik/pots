@@ -15,6 +15,13 @@
       "when": 1791860227294,
       "tag": "0001_payment_methods_and_bank_lockers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792161880569,
+      "tag": "0002_drop_locker_type",
+      "breakpoints": true
     }
   ]
 }

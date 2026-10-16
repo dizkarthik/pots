@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Pencil, Plus } from "lucide-react";
-import { Chip } from "@/components/base/badges/chip";
 import { Button } from "@/components/base/buttons/button";
 import { AccountFormDialog } from "@/components/lockers/account-form-dialog";
 import { PotTile } from "@/components/pots/pot-tile";
@@ -11,7 +10,6 @@ import { Money } from "@/components/shared/money";
 import type { Account } from "@/lib/db/schema";
 import { LOCKER_SORT_OPTIONS, type LockerSummary } from "@/lib/lockers";
 import { formatINR } from "@/lib/money";
-import { ACCOUNT_TYPE_LABELS, ACCOUNT_TYPES } from "@/lib/pot-options";
 import { cx } from "@/utils/cx";
 
 export function LockersView({ lockers }: { lockers: LockerSummary[] }) {
@@ -27,12 +25,7 @@ export function LockersView({ lockers }: { lockers: LockerSummary[] }) {
           </Button>
         }
       >
-        <SearchFilter placeholder="Search banks or pots" />
-        <FilterSelect
-          param="type"
-          label="Type"
-          options={[{ value: "all", label: "All types" }, ...ACCOUNT_TYPES.map((t) => ({ value: t, label: ACCOUNT_TYPE_LABELS[t] }))]}
-        />
+        <SearchFilter placeholder="Search lockers or pots" />
         <FilterSelect param="sort" label="Sort by" options={LOCKER_SORT_OPTIONS} className="min-w-52" />
       </ListToolbar>
 
@@ -71,9 +64,6 @@ function LockerCard({ locker, onEdit }: { locker: LockerSummary; onEdit: () => v
             <h2 id={`locker-${account.id}`} className="truncate text-headline-semibold text-text-primary">
               {account.bank}
             </h2>
-            <Chip variant="caption" color="soft">
-              {ACCOUNT_TYPE_LABELS[account.type]}
-            </Chip>
           </div>
           {account.notes && <p className="text-body-regular text-text-tertiary">{account.notes}</p>}
         </div>

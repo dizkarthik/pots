@@ -5,7 +5,6 @@ import {
   check,
   date,
   index,
-  pgEnum,
   pgTable,
   text,
   timestamp,
@@ -22,13 +21,10 @@ const paise = (name: string) => bigint(name, { mode: "number" });
 const day = (name: string) => date(name, { mode: "string" });
 const firstOfMonth = (column: string) => sql.raw(`extract(day from ${column}) = 1`);
 
-export const accountType = pgEnum("account_type", ["savings", "current", "salary", "other"]);
-
 /** A locker. The bank name is its display name (there is no separate name). */
 export const accounts = pgTable("accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
   bank: text("bank").notNull(),
-  type: accountType("type").notNull().default("savings"),
   notes: text("notes"),
   /** Manually entered bank balance, for comparison with the sum of pot balances. */
   actualBalancePaise: paise("actual_balance_paise"),
