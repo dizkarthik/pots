@@ -714,6 +714,11 @@ input[type="search"]::-webkit-search-cancel-button {
   @apply px-3 py-2.5 align-middle text-body-medium text-text-primary outline-none;
   transition: padding 200ms ease, font-size 200ms ease;
 }
+/* App addition: the th rule above forces text-start, which beats a plain
+ * `text-end` utility. Let numeric columns right-align their headers. */
+.bui-table th.text-end {
+  text-align: end;
+}
 /* Separators sit *between* rows only: the trailing row's boundary is drawn by
  * whatever follows the table (the container's bottom edge, or the pagination
  * footer's own border-top), so a filtered-down table never doubles up lines. */

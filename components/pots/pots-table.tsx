@@ -20,9 +20,18 @@ import { parsePotSort, type PotSortField } from "@/lib/filters/pots";
 
 const SORTABLE: PotSortField[] = ["name", "budget", "spent", "balance"];
 
-function SortableHeader({ label, direction }: { label: string; direction?: "ascending" | "descending" }) {
+function SortableHeader({
+  label,
+  direction,
+  end = false,
+}: {
+  label: string;
+  direction?: "ascending" | "descending";
+  /** Right-aligned column: arrow goes before the label so the label lines up with the numbers. */
+  end?: boolean;
+}) {
   return (
-    <span className="inline-flex items-center gap-1">
+    <span className={cx("inline-flex items-center gap-1", end && "flex-row-reverse")}>
       {label}
       <ChevronSortDown
         className={cx(
@@ -60,7 +69,7 @@ export function PotsTable({
       className={cx("group cursor-pointer", end && "text-end")}
     >
       {({ sortDirection }) => (
-        <SortableHeader label={label} direction={sortDescriptor.column === id ? sortDirection : undefined} />
+        <SortableHeader label={label} end={end} direction={sortDescriptor.column === id ? sortDirection : undefined} />
       )}
     </TableColumn>
   );

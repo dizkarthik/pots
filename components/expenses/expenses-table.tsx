@@ -19,9 +19,18 @@ import { formatDate } from "@/lib/month";
 import type { ExpenseRow, PaymentMethodOption, PotOption } from "@/lib/queries/expenses";
 import { cx } from "@/utils/cx";
 
-function SortLabel({ label, direction }: { label: string; direction?: "ascending" | "descending" }) {
+function SortLabel({
+  label,
+  direction,
+  end = false,
+}: {
+  label: string;
+  direction?: "ascending" | "descending";
+  /** Right-aligned column: arrow goes before the label so the label lines up with the numbers. */
+  end?: boolean;
+}) {
   return (
-    <span className="inline-flex items-center gap-1">
+    <span className={cx("inline-flex items-center gap-1", end && "flex-row-reverse")}>
       {label}
       <ChevronSortDown
         className={cx(
@@ -59,7 +68,7 @@ export function ExpensesTable({
       isRowHeader={opts.rowHeader}
       className={cx("group cursor-pointer", opts.end && "text-end")}
     >
-      {({ sortDirection }) => <SortLabel label={label} direction={sortDescriptor.column === id ? sortDirection : undefined} />}
+      {({ sortDirection }) => <SortLabel label={label} end={opts.end} direction={sortDescriptor.column === id ? sortDirection : undefined} />}
     </TableColumn>
   );
 
