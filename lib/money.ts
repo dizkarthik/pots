@@ -46,3 +46,15 @@ const inrWhole = new Intl.NumberFormat("en-IN", {
 export function formatINR(paise: number, { whole = false }: { whole?: boolean } = {}): string {
   return (whole ? inrWhole : inr).format(paise / 100);
 }
+
+const inrCompact = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
+/** 1718000000 paise → "₹1.7Cr"; for chart axes where space is tight. */
+export function formatINRCompact(paise: number): string {
+  return inrCompact.format(paise / 100);
+}

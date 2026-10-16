@@ -18,6 +18,9 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
+      // Vendored shadcn-registry code (EvilCharts); its eslint-disable comments
+      // reference rules our react-hooks plugin version doesn't define.
+      "components/evilcharts/**",
     ],
   },
 ];
