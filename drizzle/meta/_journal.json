@@ -36,6 +36,13 @@
       "when": 1792162746362,
       "tag": "0004_paid_via_locker",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792162982593,
+      "tag": "0005_locker_is_credit",
+      "breakpoints": true
     }
   ]
 }

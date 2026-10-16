@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/base/buttons/button";
+import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { Input } from "@/components/base/input/input";
 import { Textarea } from "@/components/base/textarea/textarea";
 import { Dialog } from "@/components/shared/dialog";
@@ -14,6 +15,7 @@ import { accountFormSchema, type AccountFormValues } from "@/lib/validation/acco
 function defaults(account: Account | null): AccountFormValues {
   return {
     bank: account?.bank ?? "",
+    isCredit: account?.isCredit ?? false,
     notes: account?.notes ?? "",
   };
 }
@@ -81,6 +83,16 @@ export function AccountFormDialog({
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
         {text("bank", "Name", "e.g. HDFC, Millennia, Cash", true)}
+
+        <Controller
+          control={control}
+          name="isCredit"
+          render={({ field }) => (
+            <Checkbox isSelected={field.value} onChange={field.onChange}>
+              Credit card <span className="text-text-tertiary">— tagged CREDIT and listed last</span>
+            </Checkbox>
+          )}
+        />
 
         <Controller
           control={control}

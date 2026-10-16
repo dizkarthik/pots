@@ -25,6 +25,8 @@ const firstOfMonth = (column: string) => sql.raw(`extract(day from ${column}) = 
 export const accounts = pgTable("accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
   bank: text("bank").notNull(),
+  /** Credit-card lockers (e.g. Millennia, Amazon Pay): tagged "CREDIT" and listed last. */
+  isCredit: boolean("is_credit").notNull().default(false),
   notes: text("notes"),
   /** Manually entered bank balance, for comparison with the sum of pot balances. */
   actualBalancePaise: paise("actual_balance_paise"),

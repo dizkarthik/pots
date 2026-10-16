@@ -12,6 +12,7 @@ import { failed, invalid, type ActionResult } from "./result";
 function toRow(values: AccountFormValues) {
   return {
     bank: values.bank,
+    isCredit: values.isCredit,
     notes: values.notes === "" ? null : values.notes,
   };
 }

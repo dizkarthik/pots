@@ -42,6 +42,9 @@ export function filterAndSortLockers(lockers: LockerSummary[], sp: LockerSearchP
       return true;
     })
     .sort((a, b) => {
+      // Credit-card lockers always come after bank lockers, whatever the sort.
+      const credit = Number(a.account.isCredit) - Number(b.account.isCredit);
+      if (credit) return credit;
       const cmp = field === "balance" ? a.totalBalance - b.totalBalance : a.account.bank.localeCompare(b.account.bank);
       return cmp * dir || a.account.bank.localeCompare(b.account.bank);
     });

@@ -1,0 +1,1 @@
+ALTER TABLE "accounts" ADD COLUMN "is_credit" boolean DEFAULT false NOT NULL;

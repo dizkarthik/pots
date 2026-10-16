@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Pencil, Plus } from "lucide-react";
+import { Chip } from "@/components/base/badges/chip";
 import { Button } from "@/components/base/buttons/button";
 import { AccountFormDialog } from "@/components/lockers/account-form-dialog";
 import { FilterSelect, ListToolbar, SearchFilter } from "@/components/shared/list-toolbar";
@@ -58,9 +59,16 @@ function LockerCard({ locker, onEdit }: { locker: LockerSummary; onEdit: () => v
     >
       <header className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
-          <h2 id={`locker-${account.id}`} className="truncate text-headline-semibold text-text-primary">
-            {account.bank}
-          </h2>
+          <div className="flex min-w-0 items-center gap-2">
+            <h2 id={`locker-${account.id}`} className="truncate text-headline-semibold text-text-primary">
+              {account.bank}
+            </h2>
+            {account.isCredit && (
+              <Chip variant="caption" color="purple" className="shrink-0 tracking-wide">
+                CREDIT
+              </Chip>
+            )}
+          </div>
           {account.notes && <p className="truncate text-body-regular text-text-tertiary">{account.notes}</p>}
         </div>
         <Button variant="ghost" size="small" iconOnly leadingIcon={Pencil} aria-label={`Edit ${account.bank}`} onClick={onEdit} />
