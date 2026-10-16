@@ -10,12 +10,26 @@ export interface LockerSummary {
    * reduce it.
    */
   totalBalance: number;
+  /**
+   * Credit-card lockers only: total charged to the card in the viewed month
+   * (expenses whose "Paid via" is this card, from any pot). null otherwise.
+   */
+  creditSpend: number | null;
 }
 
-export function summariseLockers(accounts: Account[], pots: PotSummary[]): LockerSummary[] {
+export function summariseLockers(
+  accounts: Account[],
+  pots: PotSummary[],
+  creditSpend: ReadonlyMap<string, number> = new Map(),
+): LockerSummary[] {
   return accounts.map((account) => {
     const own = pots.filter((p) => p.accountId === account.id);
-    return { account, pots: own, totalBalance: own.reduce((sum, p) => sum + p.balance, 0) };
+    return {
+      account,
+      pots: own,
+      totalBalance: own.reduce((sum, p) => sum + p.balance, 0),
+      creditSpend: account.isCredit ? (creditSpend.get(account.id) ?? 0) : null,
+    };
   });
 }
 

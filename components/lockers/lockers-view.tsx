@@ -11,7 +11,7 @@ import { Money } from "@/components/shared/money";
 import type { Account } from "@/lib/db/schema";
 import { LOCKER_SORT_OPTIONS, type LockerSummary } from "@/lib/lockers";
 
-export function LockersView({ lockers }: { lockers: LockerSummary[] }) {
+export function LockersView({ lockers, monthLabel }: { lockers: LockerSummary[]; monthLabel: string }) {
   // undefined = closed, null = creating, Account = editing
   const [editing, setEditing] = useState<Account | null | undefined>(undefined);
 
@@ -35,7 +35,7 @@ export function LockersView({ lockers }: { lockers: LockerSummary[] }) {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {lockers.map((locker) => (
-            <LockerCard key={locker.account.id} locker={locker} onEdit={() => setEditing(locker.account)} />
+            <LockerCard key={locker.account.id} locker={locker} monthLabel={monthLabel} onEdit={() => setEditing(locker.account)} />
           ))}
         </div>
       )}
@@ -49,7 +49,15 @@ export function LockersView({ lockers }: { lockers: LockerSummary[] }) {
   );
 }
 
-function LockerCard({ locker, onEdit }: { locker: LockerSummary; onEdit: () => void }) {
+function LockerCard({
+  locker,
+  monthLabel,
+  onEdit,
+}: {
+  locker: LockerSummary;
+  monthLabel: string;
+  onEdit: () => void;
+}) {
   const { account, pots } = locker;
   const activeCount = pots.filter((p) => !p.isArchived).length;
   const archivedCount = pots.length - activeCount;
@@ -82,10 +90,22 @@ function LockerCard({ locker, onEdit }: { locker: LockerSummary; onEdit: () => v
         )}
       >
         <div className="flex min-w-0 flex-col gap-0.5">
-          <dt className="text-caption-1-regular text-text-tertiary">Outstanding balance</dt>
-          <dd>
-            <Money paise={locker.totalBalance} signed className="text-title-2-semibold text-text-primary" />
-          </dd>
+          {locker.creditSpend !== null ? (
+            <>
+              {/* Credit card: everything charged to it this month, across pots. */}
+              <dt className="text-caption-1-regular text-text-tertiary">Spent in {monthLabel}</dt>
+              <dd>
+                <Money paise={locker.creditSpend} className="text-title-2-semibold text-text-primary" />
+              </dd>
+            </>
+          ) : (
+            <>
+              <dt className="text-caption-1-regular text-text-tertiary">Outstanding balance</dt>
+              <dd>
+                <Money paise={locker.totalBalance} signed className="text-title-2-semibold text-text-primary" />
+              </dd>
+            </>
+          )}
         </div>
         {/* Credit-card lockers don't hold pots. */}
         {!account.isCredit && (
