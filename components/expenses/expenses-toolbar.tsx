@@ -9,18 +9,19 @@ import { ExpenseFormDialog } from "@/components/expenses/expense-form-dialog";
 import { PotMultiFilter } from "@/components/expenses/pot-multi-filter";
 import { FilterSelect, ListToolbar, SearchFilter, useSetSearchParams } from "@/components/shared/list-toolbar";
 import { EXPENSE_SORT_OPTIONS, parsePotIds } from "@/lib/filters/expenses";
-import type { PaymentMethodOption, PotOption } from "@/lib/queries/expenses";
+import type { PaidViaOption } from "@/lib/payment-methods";
+import type { PotOption } from "@/lib/queries/expenses";
 
 const FILTER_PARAMS = ["q", "pot", "from", "to"] as const;
 
 export function ExpensesToolbar({
   pots,
-  paymentMethods,
+  paidViaOptions,
   range,
   today,
 }: {
   pots: PotOption[];
-  paymentMethods: PaymentMethodOption[];
+  paidViaOptions: PaidViaOption[];
   range: { from: string; to: string } | null;
   today: string;
 }) {
@@ -62,7 +63,7 @@ export function ExpensesToolbar({
         onOpenChange={setAdding}
         expense={null}
         pots={pots}
-        paymentMethods={paymentMethods}
+        paidViaOptions={paidViaOptions}
         today={today}
         // Pre-select the pot when exactly one is being filtered.
         defaultPotId={parsePotIds(params.get("pot") ?? undefined).length === 1 ? params.get("pot")! : undefined}

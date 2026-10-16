@@ -100,19 +100,19 @@ export const potBudgets = pgTable(
 );
 
 /**
- * How an expense was paid (Cash, UPI, a card…). Presets are inserted by the
- * migration; new ones are created on the fly from the expense form.
- * Names are unique case-insensitively.
- *
- * A method may belong to a locker (e.g. "HDFC Card" and "HDFC UPI" are sub
- * payment methods of the HDFC locker); generic ones have no locker.
+ * Sub payment methods of a locker, e.g. "HDFC Card" and "HDFC UPI" for the
+ * HDFC locker. They identify the exact payment mode. Lockers without sub
+ * methods (Millennia, Cash…) are paid "directly". Names are unique
+ * case-insensitively. See lib/payment-methods.ts for the "Paid via" rules.
  */
 export const paymentMethods = pgTable(
   "payment_methods",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
-    accountId: uuid("account_id").references(() => accounts.id, { onDelete: "restrict" }),
+    accountId: uuid("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "restrict" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -131,14 +131,18 @@ export const expenses = pgTable(
       .notNull()
       .references(() => pots.id, { onDelete: "restrict" }),
     note: text("note"),
-    paymentMethodId: uuid("payment_method_id")
+    /** The locker the money was paid from ("Paid via"). */
+    accountId: uuid("account_id")
       .notNull()
-      .references(() => paymentMethods.id, { onDelete: "restrict" }),
+      .references(() => accounts.id, { onDelete: "restrict" }),
+    /** The exact sub method, when the locker has them; null = paid directly from the locker. */
+    paymentMethodId: uuid("payment_method_id").references(() => paymentMethods.id, { onDelete: "restrict" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     index("expenses_pot_date_idx").on(t.potId, t.date),
     index("expenses_date_idx").on(t.date),
+    index("expenses_account_idx").on(t.accountId),
     check("expenses_amount_positive", sql.raw("amount_paise > 0")),
   ],
 );

@@ -9,13 +9,13 @@ import { DatePicker } from "@/components/base/date-picker/date-picker";
 import { Input } from "@/components/base/input/input";
 import { Label } from "@/components/base/input/label";
 import { Select, SelectItem } from "@/components/base/select/select";
-import { PaymentMethodField } from "@/components/expenses/payment-method-field";
 import { PotTile } from "@/components/pots/pot-tile";
 import { Dialog } from "@/components/shared/dialog";
 import { FieldError } from "@/components/shared/field-error";
 import { createExpense, updateExpense } from "@/lib/actions/expenses";
 import { paiseToInput } from "@/lib/money";
-import type { ExpenseRow, PaymentMethodOption, PotOption } from "@/lib/queries/expenses";
+import { paidViaValue, type PaidViaOption } from "@/lib/payment-methods";
+import type { ExpenseRow, PotOption } from "@/lib/queries/expenses";
 import { expenseFormSchema, type ExpenseFormValues } from "@/lib/validation/expenses";
 
 function defaults(expense: ExpenseRow | null, today: string, defaultPotId?: string): ExpenseFormValues {
@@ -24,11 +24,11 @@ function defaults(expense: ExpenseRow | null, today: string, defaultPotId?: stri
       date: expense.date,
       amount: paiseToInput(expense.amountPaise),
       potId: expense.potId,
-      paymentMethodId: expense.paymentMethodId,
+      paidVia: paidViaValue(expense),
       note: expense.note ?? "",
     };
   }
-  return { date: today, amount: "", potId: defaultPotId ?? "", paymentMethodId: "", note: "" };
+  return { date: today, amount: "", potId: defaultPotId ?? "", paidVia: "", note: "" };
 }
 
 export function ExpenseFormDialog({
@@ -36,7 +36,7 @@ export function ExpenseFormDialog({
   onOpenChange,
   expense,
   pots,
-  paymentMethods,
+  paidViaOptions,
   today,
   defaultPotId,
 }: {
@@ -45,7 +45,7 @@ export function ExpenseFormDialog({
   /** null = add a new expense. */
   expense: ExpenseRow | null;
   pots: PotOption[];
-  paymentMethods: PaymentMethodOption[];
+  paidViaOptions: PaidViaOption[];
   /** Today in India time, from the server. */
   today: string;
   defaultPotId?: string;
@@ -146,14 +146,25 @@ export function ExpenseFormDialog({
 
         <Controller
           control={control}
-          name="paymentMethodId"
+          name="paidVia"
           render={({ field, fieldState }) => (
-            <PaymentMethodField
-              methods={paymentMethods}
-              value={field.value}
-              onChange={field.onChange}
-              error={fieldState.error?.message}
-            />
+            <div className="flex flex-col gap-1.5">
+              <Label>Paid via</Label>
+              <Select
+                aria-label="Paid via"
+                placeholder="Choose how you paid"
+                selectedKey={field.value || null}
+                onSelectionChange={(key) => field.onChange(String(key))}
+                isInvalid={fieldState.invalid}
+              >
+                {paidViaOptions.map((o) => (
+                  <SelectItem key={o.value} id={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </Select>
+              <FieldError>{fieldState.error?.message}</FieldError>
+            </div>
           )}
         />
 

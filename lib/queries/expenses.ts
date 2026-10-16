@@ -1,11 +1,12 @@
 import "server-only";
 
-import { and, asc, desc, eq, gte, ilike, inArray, lte, or, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, inArray, lte, or, sql, type SQL } from "drizzle-orm";
 import { requireSession } from "@/lib/auth";
 import { getDb } from "@/lib/db/client";
-import { expenses, paymentMethods, pots } from "@/lib/db/schema";
+import { accounts, expenses, paymentMethods, pots } from "@/lib/db/schema";
 import type { ExpenseFilters } from "@/lib/filters/expenses";
 import { monthOf, type Month } from "@/lib/month";
+import { buildPaidViaOptions, type PaidViaOption } from "@/lib/payment-methods";
 
 export interface ExpenseRow {
   id: string;
@@ -16,8 +17,10 @@ export interface ExpenseRow {
   potName: string;
   potIcon: string;
   potColor: string;
-  paymentMethodId: string;
-  paymentMethodName: string;
+  accountId: string;
+  paymentMethodId: string | null;
+  /** The sub method's name, or the locker's when paid directly. */
+  paidViaLabel: string;
 }
 
 export interface PotOption {
@@ -27,11 +30,6 @@ export interface PotOption {
   color: string;
   startMonth: Month;
   isArchived: boolean;
-}
-
-export interface PaymentMethodOption {
-  id: string;
-  name: string;
 }
 
 /** Escapes LIKE wildcards so a search for "50%" matches literally. */
@@ -67,12 +65,14 @@ export async function getExpenses(filters: ExpenseFilters) {
       potName: pots.name,
       potIcon: pots.icon,
       potColor: pots.color,
-      paymentMethodId: paymentMethods.id,
-      paymentMethodName: paymentMethods.name,
+      accountId: expenses.accountId,
+      paymentMethodId: expenses.paymentMethodId,
+      paidViaLabel: sql<string>`coalesce(${paymentMethods.name}, ${accounts.bank})`,
     })
     .from(expenses)
     .innerJoin(pots, eq(pots.id, expenses.potId))
-    .innerJoin(paymentMethods, eq(paymentMethods.id, expenses.paymentMethodId))
+    .innerJoin(accounts, eq(accounts.id, expenses.accountId))
+    .leftJoin(paymentMethods, eq(paymentMethods.id, expenses.paymentMethodId))
     .where(and(...where))
     .orderBy(...orderBy);
 
@@ -82,11 +82,11 @@ export async function getExpenses(filters: ExpenseFilters) {
   };
 }
 
-/** Pots and payment methods for the filter menu and the expense form. */
+/** Pots and "Paid via" options for the filter menu and the expense form. */
 export async function getExpenseOptions() {
   await requireSession();
   const db = getDb();
-  const [potRows, methodRows] = await Promise.all([
+  const [potRows, lockerRows, methodRows] = await Promise.all([
     db
       .select({
         id: pots.id,
@@ -98,12 +98,12 @@ export async function getExpenseOptions() {
       })
       .from(pots)
       .orderBy(asc(pots.name)),
-    // Presets first (they were created first), then ones added later.
-    db.select({ id: paymentMethods.id, name: paymentMethods.name }).from(paymentMethods).orderBy(asc(paymentMethods.createdAt)),
+    db.select({ id: accounts.id, bank: accounts.bank }).from(accounts),
+    db.select({ id: paymentMethods.id, name: paymentMethods.name, accountId: paymentMethods.accountId }).from(paymentMethods),
   ]);
 
   return {
     pots: potRows.map((p): PotOption => ({ ...p, startMonth: monthOf(p.startMonth) })),
-    paymentMethods: methodRows satisfies PaymentMethodOption[],
+    paidVia: buildPaidViaOptions(lockerRows, methodRows) satisfies PaidViaOption[],
   };
 }

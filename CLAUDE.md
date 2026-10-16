@@ -50,9 +50,10 @@ balance(pot, M) = Σ budget in effect for each month m in [pot.start_month, M], 
 - `accounts.actual_balance_paise` is currently unused by the UI (the bank-balance comparison was removed on request).
 
 ### Expenses
-- Every expense has a required **Payment via** (`payment_methods`). Presets (Cash, UPI, HDFC Credit, RuPay Credit, Debit Card) are inserted by migration 0001 and listed in `lib/payment-methods.ts`; new methods are created on the fly from the expense form ("Create “…”"), unique case-insensitively.
+- Every expense has a required **Paid via**, which identifies the locker the money came from (`expenses.account_id`) and, when that locker has sub payment methods, the exact mode (`expenses.payment_method_id`).
+  - Sub payment methods belong to a locker (`payment_methods.account_id`, required): each bank locker has "[Locker] Card" and "[Locker] UPI" (all except Millennia, Amazon Pay, Cash, Folders). They are managed on the backend, not created from the expense form, and not shown on locker cards.
+  - Paid via options (`buildPaidViaOptions` in `lib/payment-methods.ts`): a locker WITH sub methods appears only as those sub methods; a locker WITHOUT appears as itself (paid directly). The server re-checks this in `resolvePaidVia` (`lib/actions/expenses.ts`).
 - Expense list filters: search, multi-select pots (`?pot=id1,id2`), date range, sort. No locker or amount filters.
-- Payment methods can belong to a locker (`payment_methods.account_id`): each bank locker has "[Locker] Card" and "[Locker] UPI" (all except Millennia, Amazon Pay, Cash, Folders). Generic methods have no locker. This link is backend-only for now (not shown on locker cards).
 
 ## Folder structure
 ```

@@ -13,10 +13,9 @@ config({ path: ".env.local", quiet: true });
 
 import { computePotBalance } from "../lib/balance";
 import { createDb } from "../lib/db/client";
-import { accounts, expenses, paymentMethods, potArchivePeriods, potBudgets, pots } from "../lib/db/schema";
+import { accounts, expenses, potArchivePeriods, potBudgets, pots } from "../lib/db/schema";
 import { toLedger } from "../lib/ledger";
 import { formatINR } from "../lib/money";
-import { PRESET_PAYMENT_METHODS } from "../lib/payment-methods";
 import { addMonths, currentMonth, firstDayOf, lastDayOf, todayIso, type Month } from "../lib/month";
 
 const db = createDb();
@@ -61,8 +60,6 @@ type PotSeed = {
   archivedFrom?: Month;
   /** Expenses for one month: [date, rupees, note?][] */
   spend: (month: Month) => [string, number, string?][];
-  /** Payment methods this pot is typically paid with (presets from migration 0001). */
-  paidVia: (typeof PRESET_PAYMENT_METHODS)[number][];
 };
 
 const ACCOUNTS = [
@@ -80,71 +77,60 @@ const SHOPPING = ["Myntra", "Amazon", "Decathlon", "Uniqlo", "IKEA"];
 const POTS: PotSeed[] = [
   {
     key: "rent", name: "Rent", icon: "house", color: "chart-6", account: "hdfc", start: M(-3),
-    paidVia: ["UPI"],
     budgets: [[M(-3), 25000]],
     spend: (m) => [[dayIn(m, 1), 25000, "Monthly rent"]],
   },
   {
     key: "groceries", name: "Groceries", icon: "shopping-cart", color: "chart-2", account: "hdfc", start: M(-3),
-    paidVia: ["UPI", "HDFC Credit", "Cash"],
     budgets: [[M(-3), 12000]],
     spend: (m) => Array.from({ length: between(6, 9) }, () => [dayIn(m), between(700, 1900), pick(GROCERY)]),
   },
   {
     key: "electricity", name: "Electricity", icon: "zap", color: "chart-8", account: "icici", start: M(-3),
-    paidVia: ["UPI"],
     budgets: [[M(-3), 2500]],
     spend: (m) => [[dayIn(m, 8), between(1800, 2900), "BESCOM bill"]],
   },
   {
     key: "internet", name: "Mobile & Internet", icon: "wifi", color: "chart-4", account: "icici", start: M(-3),
-    paidVia: ["HDFC Credit"],
     budgets: [[M(-3), 1500]],
     spend: (m) => [[dayIn(m, 5), 699, "Airtel postpaid"], [dayIn(m, 11), 799, "ACT Fibernet"]],
   },
   {
     // Past change (₹3,500 → ₹4,000 last month) and a pending one for next month.
     key: "petrol", name: "Petrol", icon: "fuel", color: "chart-3", account: "sbi", start: M(-3),
-    paidVia: ["RuPay Credit", "UPI"],
     budgets: [[M(-3), 3500], [M(-1), 4000], [M(1), 4500]],
     spend: (m) => Array.from({ length: between(2, 3) }, () => [dayIn(m), between(900, 1400), "Indian Oil"]),
   },
   {
     // Consistently overspent — the negative balance carries forward.
     key: "dining", name: "Dining out", icon: "utensils", color: "chart-5", account: "sbi", start: M(-3),
-    paidVia: ["UPI", "HDFC Credit", "Cash"],
     budgets: [[M(-3), 5000]],
     spend: (m) => Array.from({ length: between(6, 8) }, () => [dayIn(m), between(650, 1300), pick(DINING)]),
   },
   {
     key: "gym", name: "Gym", icon: "dumbbell", color: "chart-7", account: "axis", start: M(-3),
-    paidVia: ["Debit Card"],
     budgets: [[M(-3), 2000]],
     spend: (m) => [[dayIn(m, 3), 2000, "Cult.fit membership"]],
   },
   {
     key: "shopping", name: "Shopping", icon: "shopping-bag", color: "chart-9", account: "axis", start: M(-3),
-    paidVia: ["HDFC Credit", "RuPay Credit"],
     budgets: [[M(-3), 6000]],
     spend: (m) => Array.from({ length: between(1, 3) }, () => [dayIn(m), between(900, 3800), pick(SHOPPING)]),
   },
   {
     key: "medical", name: "Medical", icon: "pill", color: "chart-1", account: "kotak", start: M(-3),
-    paidVia: ["Cash", "UPI"],
     budgets: [[M(-3), 3000]],
     spend: (m) => (random() < 0.6 ? [[dayIn(m), between(250, 1800), pick(["Apollo Pharmacy", "Doctor visit", "Lab tests"])]] : []),
   },
   {
     // Created last month (mid-year): accrues only from its start month.
     key: "travel", name: "Travel", icon: "plane", color: "chart-4", account: "kotak", start: M(-1),
-    paidVia: ["HDFC Credit"],
     budgets: [[M(-1), 10000]],
     spend: (m) => (m === thisMonth ? [[dayIn(m, 6), 7800, "Weekend trip to Coorg"]] : []),
   },
   {
     // Archived two months ago: balance frozen since then.
     key: "subscriptions", name: "Subscriptions", icon: "tv", color: "chart-5", account: "icici", start: M(-3),
-    paidVia: ["HDFC Credit"],
     budgets: [[M(-3), 1200]],
     archivedFrom: M(-2),
     spend: (m) => (m <= M(-2) ? [[dayIn(m, 15), 649, "Netflix"], [dayIn(m, 15), 119, "Spotify"]] : []),
@@ -165,14 +151,6 @@ async function main() {
     await db.delete(accounts);
     console.log("Wiped existing data.");
   }
-
-  // Presets are inserted by migration 0001, so they already exist.
-  const methodRows = await db.select({ id: paymentMethods.id, name: paymentMethods.name }).from(paymentMethods);
-  const methodId = (name: string) => {
-    const row = methodRows.find((m) => m.name === name);
-    if (!row) throw new Error(`Payment method "${name}" missing — run npm run db:migrate first.`);
-    return row.id;
-  };
 
   const accountIds = new Map<string, string>();
   for (const a of ACCOUNTS) {
@@ -214,7 +192,8 @@ async function main() {
         date,
         amountPaise: R(rupees),
         note: note ?? null,
-        paymentMethodId: methodId(pick(p.paidVia)),
+        // Seed lockers have no sub payment methods, so expenses are paid directly.
+        accountId: accountIds.get(p.account)!,
       }));
     if (expenseRows.length) await db.insert(expenses).values(expenseRows);
 

@@ -16,7 +16,8 @@ import { deleteExpense } from "@/lib/actions/expenses";
 import { EXPENSE_SORT_FIELDS, parseExpenseSort, type ExpenseSortField } from "@/lib/filters/expenses";
 import { formatINR } from "@/lib/money";
 import { formatDate } from "@/lib/month";
-import type { ExpenseRow, PaymentMethodOption, PotOption } from "@/lib/queries/expenses";
+import type { PaidViaOption } from "@/lib/payment-methods";
+import type { ExpenseRow, PotOption } from "@/lib/queries/expenses";
 import { cx } from "@/utils/cx";
 
 function SortLabel({
@@ -47,12 +48,12 @@ function SortLabel({
 export function ExpensesTable({
   rows,
   pots,
-  paymentMethods,
+  paidViaOptions,
   today,
 }: {
   rows: ExpenseRow[];
   pots: PotOption[];
-  paymentMethods: PaymentMethodOption[];
+  paidViaOptions: PaidViaOption[];
   today: string;
 }) {
   const [editing, setEditing] = useState<ExpenseRow | null>(null);
@@ -110,7 +111,7 @@ export function ExpensesTable({
                     <span className="text-body-medium text-text-primary">{row.potName}</span>
                   </div>
                 </TableCell>
-                <TableCell className="whitespace-nowrap text-text-secondary">{row.paymentMethodName}</TableCell>
+                <TableCell className="whitespace-nowrap text-text-secondary">{row.paidViaLabel}</TableCell>
                 <TableCell className="max-w-64 truncate text-text-secondary">{row.note ?? "—"}</TableCell>
                 <TableCell className="text-end">
                   <Money paise={row.amountPaise} className="text-body-medium" />
@@ -129,7 +130,7 @@ export function ExpensesTable({
         onOpenChange={(open) => !open && setEditing(null)}
         expense={editing}
         pots={pots}
-        paymentMethods={paymentMethods}
+        paidViaOptions={paidViaOptions}
         today={today}
       />
       <DeleteExpenseDialog expense={deleting} onClose={() => setDeleting(null)} />
