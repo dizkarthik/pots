@@ -10,7 +10,8 @@ export const metadata = { title: "Pots · Pots" };
 export default async function PotsPage({ searchParams }: { searchParams: Promise<PotSearchParams> }) {
   const [params, { month, pots, accounts }] = await Promise.all([searchParams, getPotSummaries()]);
   const nextMonth = addMonths(month, 1);
-  const lockers = accounts.map((a) => ({ id: a.id, bank: a.bank }));
+  // Credit-card lockers can't hold pots, so they're not offered here.
+  const lockers = accounts.filter((a) => !a.isCredit).map((a) => ({ id: a.id, bank: a.bank }));
   const visible = filterAndSortPots(pots, params);
 
   return (

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
 import { getDb } from "@/lib/db/client";
-import { accounts } from "@/lib/db/schema";
+import { accounts, pots } from "@/lib/db/schema";
 import { accountFormSchema, type AccountFormValues } from "@/lib/validation/accounts";
 import { failed, invalid, type ActionResult } from "./result";
 
@@ -33,6 +33,12 @@ export async function updateAccount(accountId: unknown, input: unknown): Promise
   if (!id.success) return failed("Unknown locker.");
   const parsed = accountFormSchema.safeParse(input);
   if (!parsed.success) return invalid(parsed.error);
+
+  if (parsed.data.isCredit) {
+    // Credit-card lockers can't hold pots.
+    const held = await getDb().select({ id: pots.id }).from(pots).where(eq(pots.accountId, id.data)).limit(1);
+    if (held.length) return failed("This locker has pots. Move them to another locker before marking it as a credit card.");
+  }
 
   const updated = await getDb()
     .update(accounts)

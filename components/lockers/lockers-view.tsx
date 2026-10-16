@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Pencil, Plus } from "lucide-react";
 import { Chip } from "@/components/base/badges/chip";
 import { Button } from "@/components/base/buttons/button";
+import { cx } from "@/utils/cx";
 import { AccountFormDialog } from "@/components/lockers/account-form-dialog";
 import { FilterSelect, ListToolbar, SearchFilter } from "@/components/shared/list-toolbar";
 import { Money } from "@/components/shared/money";
@@ -74,18 +75,26 @@ function LockerCard({ locker, onEdit }: { locker: LockerSummary; onEdit: () => v
         <Button variant="ghost" size="small" iconOnly leadingIcon={Pencil} aria-label={`Edit ${account.bank}`} onClick={onEdit} />
       </header>
 
-      <dl className="grid grid-cols-[1fr_auto] gap-4 rounded-2xl bg-background-secondary-default p-4">
+      <dl
+        className={cx(
+          "grid gap-4 rounded-2xl bg-background-secondary-default p-4",
+          account.isCredit ? "grid-cols-1" : "grid-cols-[1fr_auto]",
+        )}
+      >
         <div className="flex min-w-0 flex-col gap-0.5">
           <dt className="text-caption-1-regular text-text-tertiary">Outstanding balance</dt>
           <dd>
             <Money paise={locker.totalBalance} signed className="text-title-2-semibold text-text-primary" />
           </dd>
         </div>
-        <div className="flex flex-col items-end gap-0.5">
-          <dt className="text-caption-1-regular text-text-tertiary">Pots</dt>
-          <dd className="text-title-2-semibold text-text-primary tabular-nums">{activeCount}</dd>
-          {archivedCount > 0 && <dd className="text-caption-1-regular text-text-tertiary">+{archivedCount} archived</dd>}
-        </div>
+        {/* Credit-card lockers don't hold pots. */}
+        {!account.isCredit && (
+          <div className="flex flex-col items-end gap-0.5">
+            <dt className="text-caption-1-regular text-text-tertiary">Pots</dt>
+            <dd className="text-title-2-semibold text-text-primary tabular-nums">{activeCount}</dd>
+            {archivedCount > 0 && <dd className="text-caption-1-regular text-text-tertiary">+{archivedCount} archived</dd>}
+          </div>
+        )}
       </dl>
     </section>
   );

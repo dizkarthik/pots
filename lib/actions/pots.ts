@@ -11,9 +11,12 @@ import { currentMonth, firstDayOf, monthOf } from "@/lib/month";
 import { potFormSchema, potIdSchema } from "@/lib/validation/pots";
 import { failed, invalid, type ActionResult } from "./result";
 
-async function accountExists(id: string) {
-  const rows = await getDb().select({ id: accounts.id }).from(accounts).where(eq(accounts.id, id)).limit(1);
-  return rows.length > 0;
+/** Returns an error message if the locker can't hold pots, else null. */
+async function lockerProblem(id: string): Promise<string | null> {
+  const [row] = await getDb().select({ isCredit: accounts.isCredit }).from(accounts).where(eq(accounts.id, id)).limit(1);
+  if (!row) return "That locker no longer exists.";
+  if (row.isCredit) return "Credit card lockers can't hold pots.";
+  return null;
 }
 
 export async function createPot(input: unknown): Promise<ActionResult> {
@@ -21,7 +24,8 @@ export async function createPot(input: unknown): Promise<ActionResult> {
   const parsed = potFormSchema.safeParse(input);
   if (!parsed.success) return invalid(parsed.error);
   const { name, icon, color, accountId, budget } = parsed.data;
-  if (!(await accountExists(accountId))) return failed("That locker no longer exists.");
+  const locker = await lockerProblem(accountId);
+  if (locker) return failed(locker);
 
   // A new pot starts this month and gets its full budget for it.
   const db = getDb();
@@ -43,7 +47,8 @@ export async function updatePot(potId: unknown, input: unknown): Promise<ActionR
   const parsed = potFormSchema.safeParse(input);
   if (!parsed.success) return invalid(parsed.error);
   const { name, icon, color, accountId, budget } = parsed.data;
-  if (!(await accountExists(accountId))) return failed("That locker no longer exists.");
+  const locker = await lockerProblem(accountId);
+  if (locker) return failed(locker);
 
   const db = getDb();
   const budgets = await db.select().from(potBudgets).where(eq(potBudgets.potId, id.data));

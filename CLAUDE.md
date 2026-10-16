@@ -46,7 +46,7 @@ balance(pot, M) = Σ budget in effect for each month m in [pot.start_month, M], 
 
 ### Lockers
 - A locker is a bank account, credit card, wallet or cash, identified by its name (stored in `accounts.bank`; there is no separate name and **no type/category** — Savings/Current/etc. were removed on request).
-- Credit-card lockers (`accounts.is_credit`, currently Millennia and Amazon Pay) show a "CREDIT" tag after the name and are always listed last, whatever the sort.
+- Credit-card lockers (`accounts.is_credit`, currently Millennia and Amazon Pay) show a "CREDIT" tag after the name and are always listed last, whatever the sort. They **cannot hold pots** (enforced in the pot and locker actions; their cards show no pot count).
 - A locker's headline number is **Total balance** = Σ outstanding balances of all its pots (archived included; overspent pots reduce it).
 - `accounts.actual_balance_paise` is currently unused by the UI (the bank-balance comparison was removed on request).
 
