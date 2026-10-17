@@ -94,6 +94,11 @@ drizzle/  scripts/seed.ts  middleware.ts
 - **Local dev and production share one Neon database by decision** (`neon-champagne-canvas`, main branch). Anything done locally affects the live site.
 - **The database now holds the user's REAL lockers (sample data was wiped on 2026-10-16). Never run `npm run db:seed -- --reset` or bulk-delete data.** Test against the real DB only with clearly marked rows you remove afterwards, or ask first.
 
+## Git & deploy workflow
+- Work happens **locally**: commit to `main` as each change is done, but **do not push** during the day.
+- **Push once at end of day (EOD)** when the user says so — every push to `main` auto-deploys to Vercel (https://pots-eight.vercel.app), so a push = publishing.
+- Before an EOD push: `npm run typecheck`, `npm run lint`, `npm test` all pass, and any new migrations have been applied (`npm run db:migrate` — local and production share the database).
+
 ## Commands
 `npm run dev` · `npm test` · `npm run typecheck` · `npm run lint` · `npm run build` · `npm run db:generate` · `npm run db:migrate` · `npm run db:seed` · `npm run db:studio`
 - Don't run `npm run build` while `npm run dev` is running; both write to `.next/`.
