@@ -1,50 +1,38 @@
-// Money is always an integer number of paise. Never use floats for amounts.
+// Money is stored as an integer number of paise (never floats), but the app
+// works in WHOLE RUPEES: users enter whole amounts and every amount is shown
+// without decimals. Stored values are therefore always multiples of 100.
 
-const AMOUNT_RE = /^(\d+)(?:\.(\d{1,2}))?$/;
+const AMOUNT_RE = /^\d+$/;
 
 /**
- * Parses user input ("1,234.5", "₹ 500", "99.99") into integer paise using
- * string arithmetic only. Returns null for anything that isn't a
- * non-negative amount with at most two decimals.
+ * Parses user input ("1,234", "₹ 500") into integer paise using string
+ * arithmetic only. Returns null for anything that isn't a non-negative whole
+ * number of rupees (decimals are rejected).
  */
 export function toPaise(input: string): number | null {
   const cleaned = input.trim().replace(/^₹\s*/, "").replace(/,/g, "");
-  const match = AMOUNT_RE.exec(cleaned);
-  if (!match) return null;
-  const rupees = Number(match[1]);
-  const paise = Number((match[2] ?? "").padEnd(2, "0"));
-  const total = rupees * 100 + paise;
+  if (!AMOUNT_RE.test(cleaned)) return null;
+  const total = Number(cleaned) * 100;
   return Number.isSafeInteger(total) ? total : null;
 }
 
-/** Paise → plain decimal string for form inputs ("123456.5" → "1234.56"). */
+/** Paise → whole-rupee string for form inputs (123400 → "1234"). */
 export function paiseToInput(paise: number): string {
-  const sign = paise < 0 ? "-" : "";
-  const abs = Math.abs(paise);
-  const rupees = Math.floor(abs / 100);
-  const rest = abs % 100;
-  return rest === 0 ? `${sign}${rupees}` : `${sign}${rupees}.${String(rest).padStart(2, "0")}`;
+  return String(Math.round(paise / 100));
 }
 
 const inr = new Intl.NumberFormat("en-IN", {
-  style: "currency",
-  currency: "INR",
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
-const inrWhole = new Intl.NumberFormat("en-IN", {
   style: "currency",
   currency: "INR",
   maximumFractionDigits: 0,
 });
 
 /**
- * 12345600 → "₹1,23,456.00". Division by 100 is display-only; the result is
- * never fed back into arithmetic.
+ * 12345600 → "₹1,23,456". Whole rupees only. Division by 100 is display-only;
+ * the result is never fed back into arithmetic.
  */
-export function formatINR(paise: number, { whole = false }: { whole?: boolean } = {}): string {
-  return (whole ? inrWhole : inr).format(paise / 100);
+export function formatINR(paise: number): string {
+  return inr.format(paise / 100);
 }
 
 const inrCompact = new Intl.NumberFormat("en-IN", {

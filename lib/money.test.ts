@@ -1,49 +1,44 @@
 import { describe, expect, it } from "vitest";
-import { formatINR, paiseToInput, toPaise } from "./money";
+import { formatINR, formatINRCompact, paiseToInput, toPaise } from "./money";
 
-describe("toPaise", () => {
+describe("toPaise (whole rupees only)", () => {
   it.each([
     ["500", 50000],
-    ["500.5", 50050],
-    ["500.05", 50005],
-    ["0.1", 10],
-    ["1,23,456.78", 12345678],
+    ["0", 0],
+    ["1,23,456", 12345600],
     ["₹ 1,000", 100000],
     ["  42  ", 4200],
-    ["0", 0],
   ])("parses %j as %d paise", (input, expected) => {
     expect(toPaise(input)).toBe(expected);
   });
 
-  it("avoids float rounding errors", () => {
-    expect(toPaise("0.29")).toBe(29); // 0.29 * 100 === 28.999999999999996
-    expect(toPaise("1.15")).toBe(115);
-  });
-
-  it.each(["", "abc", "-5", "1.234", "1.2.3", "1e3", ".5"])("rejects %j", (input) => {
+  it.each(["", "abc", "-5", "500.5", "499.50", "0.29", "1e3", ".5", "1.2.3", "1,000.00"])("rejects %j", (input) => {
     expect(toPaise(input)).toBeNull();
   });
 });
 
 describe("formatINR", () => {
-  it("uses Indian digit grouping", () => {
-    expect(formatINR(12345600)).toBe("₹1,23,456.00");
-    expect(formatINR(1234567890)).toBe("₹1,23,45,678.90");
+  it("shows whole rupees with Indian digit grouping and no decimals", () => {
+    expect(formatINR(12345600)).toBe("₹1,23,456");
+    expect(formatINR(1234567800)).toBe("₹1,23,45,678");
+    expect(formatINR(0)).toBe("₹0");
   });
 
-  it("formats small and negative amounts", () => {
-    expect(formatINR(5)).toBe("₹0.05");
-    expect(formatINR(-20000)).toBe("-₹200.00");
+  it("formats negative amounts", () => {
+    expect(formatINR(-20000)).toBe("-₹200");
   });
+});
 
-  it("can drop paise for compact display", () => {
-    expect(formatINR(60000, { whole: true })).toBe("₹600");
+describe("formatINRCompact", () => {
+  it("abbreviates large amounts for chart axes", () => {
+    expect(formatINRCompact(17180000)).toBe("₹1.7L");
+    expect(formatINRCompact(1200000)).toBe("₹12K");
   });
 });
 
 describe("paiseToInput", () => {
-  it("round-trips through toPaise", () => {
-    for (const p of [0, 5, 50, 12345, 50000, 12345678]) {
+  it("round-trips whole-rupee amounts through toPaise", () => {
+    for (const p of [0, 100, 50000, 12345600]) {
       expect(toPaise(paiseToInput(p))).toBe(p);
     }
   });

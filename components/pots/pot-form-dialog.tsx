@@ -78,7 +78,7 @@ export function PotFormDialog({
   );
 
   const budgetHint = pot
-    ? `Applies from ${formatMonth(nextMonth)}. ${formatMonth(month)} keeps ${formatINR(pot.budget, { whole: true })}.`
+    ? `Applies from ${formatMonth(nextMonth)}. ${formatMonth(month)} keeps ${formatINR(pot.budget)}.`
     : `Starts this month — the full budget applies to ${formatMonth(month)}.`;
 
   return (
@@ -136,8 +136,8 @@ export function PotFormDialog({
             render={({ field, fieldState }) => (
               <Input
                 label="Monthly budget"
-                placeholder="0.00"
-                inputMode="decimal"
+                placeholder="0"
+                inputMode="numeric"
                 leadingAddon={<span className="text-body-medium text-text-tertiary">₹</span>}
                 value={field.value}
                 onChange={field.onChange}

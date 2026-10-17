@@ -95,14 +95,14 @@ function LockerCard({
               {/* Credit card: everything charged to it this month, across pots. */}
               <dt className="text-caption-1-regular text-text-tertiary">Spent in {monthLabel}</dt>
               <dd>
-                <Money paise={locker.creditSpend} quietPaise className="text-title-2-semibold text-text-primary" />
+                <Money paise={locker.creditSpend} className="text-title-2-semibold text-text-primary" />
               </dd>
             </>
           ) : (
             <>
               <dt className="text-caption-1-regular text-text-tertiary">Outstanding balance</dt>
               <dd>
-                <Money paise={locker.totalBalance} signed quietPaise className="text-title-2-semibold text-text-primary" />
+                <Money paise={locker.totalBalance} signed className="text-title-2-semibold text-text-primary" />
               </dd>
             </>
           )}

@@ -121,7 +121,7 @@ export function PotsTable({
                     <Money paise={pot.budget} />
                     {pot.upcoming && (
                       <span className="text-caption-1-regular text-status-blue-text">
-                        {formatINR(pot.upcoming.amountPaise, { whole: true })} from{" "}
+                        {formatINR(pot.upcoming.amountPaise)} from{" "}
                         {formatMonth(pot.upcoming.effectiveFrom, { short: true })}
                       </span>
                     )}

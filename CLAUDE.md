@@ -24,7 +24,8 @@ Single-user app. Desktop-first; layouts use flex/grid so mobile can be polished 
 ## Business rules (do not break)
 
 ### Money
-- Store every amount as **integer paise** (`bigint` columns, `number` in TS). Never floats. Parse user input with `toPaise()` (string-based), display with `formatINR()` → `₹1,23,456.00` (`en-IN`).
+- Store every amount as **integer paise** (`bigint` columns, `number` in TS). Never floats.
+- The app works in **whole rupees** (decided 2026-10-17): users enter whole amounts only — `toPaise()` rejects decimals — and every amount displays without decimals via `formatINR()` → `₹1,23,456` (`en-IN`). Stored values are therefore multiples of 100. Don't reintroduce paise in inputs or display.
 
 ### Pot balance (computed, never stored)
 ```

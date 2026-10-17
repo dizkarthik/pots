@@ -25,23 +25,23 @@ export function KpiRow({ totals, monthLabel }: { totals: MonthTotals; monthLabel
   return (
     <div className="grid gap-4 sm:grid-cols-3">
       <Tile label={`Budget · ${monthLabel}`} hint="Across all active pots">
-        <Money paise={totals.budget} quietPaise />
+        <Money paise={totals.budget} />
       </Tile>
       <Tile
         label="Spent"
         hint={totals.budget > 0 ? `${Math.round((totals.spent / totals.budget) * 100)}% of this month's budget` : undefined}
       >
-        <Money paise={totals.spent} quietPaise />
+        <Money paise={totals.spent} />
       </Tile>
       <Tile
         label="Remaining"
         hint={
           <>
-            Available incl. carry-over: <Money paise={totals.available} signed quietPaise />
+            Available incl. carry-over: <Money paise={totals.available} signed />
           </>
         }
       >
-        <Money paise={totals.remaining} signed quietPaise />
+        <Money paise={totals.remaining} signed />
       </Tile>
     </div>
   );
@@ -61,10 +61,9 @@ export function BudgetVsActual({ rows }: { rows: LockerBudgetRow[] }) {
               <span className="tabular-nums text-text-secondary">
                 <Money
                   paise={r.spent}
-                  quietPaise
                   className={cx("text-body-medium", over ? "text-text-error-primary" : "text-text-primary")}
                 />{" "}
-                of {formatINR(r.budget, { whole: true })}
+                of {formatINR(r.budget)}
               </span>
             </div>
             <div
@@ -82,7 +81,7 @@ export function BudgetVsActual({ rows }: { rows: LockerBudgetRow[] }) {
             </div>
             {over && (
               <span className="flex items-center gap-1 text-caption-1-medium text-text-error-primary">
-                <AlertTriangle className="size-3.5" aria-hidden /> Over by {formatINR(r.spent - r.budget, { whole: true })}
+                <AlertTriangle className="size-3.5" aria-hidden /> Over by {formatINR(r.spent - r.budget)}
               </span>
             )}
           </li>
@@ -120,9 +119,9 @@ export function PotBalanceCards({ pots }: { pots: PotSummary[] }) {
               )}
             </div>
             <div className="flex items-baseline justify-between gap-2">
-              <Money paise={p.balance} signed quietPaise className="text-headline-semibold text-text-primary" />
+              <Money paise={p.balance} signed className="text-headline-semibold text-text-primary" />
               <span className="text-caption-1-regular text-text-tertiary">
-                of {formatINR(p.budgetThisMonth, { whole: true })}
+                of {formatINR(p.budgetThisMonth)}
               </span>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-chart-track" aria-hidden>
@@ -154,7 +153,7 @@ export function RecentExpensesList({ rows }: { rows: RecentExpense[] }) {
               {e.potName} · {e.paidViaLabel} · {formatDate(e.date, { weekday: true })}
             </span>
           </div>
-          <Money paise={e.amountPaise} quietPaise className="text-body-medium text-text-primary" />
+          <Money paise={e.amountPaise} className="text-body-medium text-text-primary" />
         </li>
       ))}
     </ul>

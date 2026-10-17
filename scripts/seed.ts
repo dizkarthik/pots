@@ -201,10 +201,10 @@ async function main() {
     summary.push({
       name: p.name + (p.archivedFrom ? " (archived)" : ""),
       account: ACCOUNTS.find((a) => a.key === p.account)!.bank,
-      budget: formatINR(b.budgetThisMonth, { whole: true }),
-      spent: formatINR(b.spentThisMonth, { whole: true }),
-      carried: formatINR(b.carriedOver, { whole: true }),
-      balance: formatINR(b.balance, { whole: true }),
+      budget: formatINR(b.budgetThisMonth),
+      spent: formatINR(b.spentThisMonth),
+      carried: formatINR(b.carriedOver),
+      balance: formatINR(b.balance),
     });
   }
 

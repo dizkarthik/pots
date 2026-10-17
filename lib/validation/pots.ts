@@ -3,7 +3,8 @@ import { toPaise } from "@/lib/money";
 import { POT_COLORS, POT_ICON_NAMES } from "@/lib/pot-options";
 
 // Amount fields stay strings in forms; the server converts with toPaise().
-export const amountString = (message = "Enter an amount like 500 or 499.50") =>
+// The app works in whole rupees, so decimals are rejected.
+export const amountString = (message = "Enter a whole amount in rupees, like 500") =>
   z.string().trim().refine((v) => toPaise(v) !== null, message);
 
 /**

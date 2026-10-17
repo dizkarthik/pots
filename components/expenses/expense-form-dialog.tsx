@@ -87,8 +87,8 @@ export function ExpenseFormDialog({
             render={({ field, fieldState }) => (
               <Input
                 label="Amount"
-                placeholder="0.00"
-                inputMode="decimal"
+                placeholder="0"
+                inputMode="numeric"
                 leadingAddon={<span className="text-body-medium text-text-tertiary">₹</span>}
                 value={field.value}
                 onChange={field.onChange}
