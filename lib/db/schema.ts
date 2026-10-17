@@ -161,13 +161,19 @@ export const vaults = pgTable(
     name: text("name").notNull(),
     icon: text("icon").notNull().default("piggy-bank"),
     color: text("color").notNull().default("chart-1"),
-    /** Optional bank locker the money is saved in; its invested total counts toward that locker's balance. */
+    /**
+     * "Parked": where the money is saved — either a bank locker (its invested
+     * total counts toward that locker's balance) or an investment type
+     * (VAULT_INSTRUMENTS in lib/vaults.ts). At most one of the two is set.
+     */
     accountId: uuid("account_id").references(() => accounts.id, { onDelete: "restrict" }),
+    parkedIn: text("parked_in"),
     startMonth: day("start_month").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     check("vaults_start_month_first_day", firstOfMonth("start_month")),
+    check("vaults_parked_one_place", sql.raw("account_id is null or parked_in is null")),
     index("vaults_account_idx").on(t.accountId),
   ],
 );

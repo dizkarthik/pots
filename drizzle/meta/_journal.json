@@ -57,6 +57,13 @@
       "when": 1792241663470,
       "tag": "0007_vault_locker",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792241939317,
+      "tag": "0008_vault_parked",
+      "breakpoints": true
     }
   ]
 }

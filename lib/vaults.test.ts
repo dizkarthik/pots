@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyBudgetEdit } from "./budget";
-import { adjustableMonths, computeVault, stepStartMonths, vaultHistory, type VaultLedger } from "./vaults";
+import { adjustableMonths, computeVault, parkedValue, parseParked, stepStartMonths, VAULT_INSTRUMENTS, vaultHistory, type VaultLedger } from "./vaults";
 
 const R = (rupees: number) => rupees * 100;
 const ist = (date: string) => new Date(`${date}T12:00:00+05:30`);
@@ -109,5 +109,25 @@ describe("step up / down", () => {
 
   it("can start from next month or any month back to the vault's start", () => {
     expect(stepStartMonths("2026-08", "2026-10")).toEqual(["2026-11", "2026-10", "2026-09", "2026-08"]);
+  });
+});
+
+describe("parked", () => {
+  const ID = "11111111-1111-4111-8111-111111111111";
+
+  it("round-trips lockers, instruments and 'not set'", () => {
+    expect(parseParked(parkedValue({ accountId: ID, parkedIn: null }))).toEqual({ kind: "locker", accountId: ID });
+    expect(parseParked(parkedValue({ accountId: null, parkedIn: "Mutual Fund" }))).toEqual({ kind: "instrument", instrument: "Mutual Fund" });
+    expect(parseParked(parkedValue({ accountId: null, parkedIn: null }))).toBeNull();
+  });
+
+  it("rejects unknown instruments and malformed values", () => {
+    for (const bad of ["i:Real Estate", "i:", "a:not-a-uuid", "x:Gold", "Gold", "i:gold"]) {
+      expect(parseParked(bad)).toBeUndefined();
+    }
+  });
+
+  it("does not repeat Cash, which is a locker", () => {
+    expect(VAULT_INSTRUMENTS).not.toContain("Cash");
   });
 });

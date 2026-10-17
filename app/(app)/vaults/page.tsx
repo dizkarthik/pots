@@ -1,6 +1,6 @@
 import { PageHeader } from "@/components/app-shell/page-header";
 import { VaultsView } from "@/components/vaults/vaults-view";
-import { filterAndSortVaults, type VaultSearchParams } from "@/lib/filters/vaults";
+import { filterAndSortVaults, parkedFilterOptions, type VaultSearchParams } from "@/lib/filters/vaults";
 import { formatINR } from "@/lib/money";
 import { formatMonth } from "@/lib/month";
 import { getPotSummaries } from "@/lib/queries/pots";
@@ -22,7 +22,7 @@ export default async function VaultsPage({ searchParams }: { searchParams: Promi
         title="Vaults"
         description={`Your investments. Each vault's monthly amount is added automatically every month. ${formatMonth(month)}: ${formatINR(thisMonth)} · invested so far: ${formatINR(totalInvested)}.`}
       />
-      <VaultsView vaults={visible} month={month} lockers={lockers} />
+      <VaultsView vaults={visible} month={month} lockers={lockers} parkedOptions={parkedFilterOptions(vaults)} />
     </>
   );
 }

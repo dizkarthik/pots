@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { Header, ListBoxSection } from "react-aria-components";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { Label } from "@/components/base/input/label";
@@ -21,10 +22,11 @@ import {
   type PotIconName,
 } from "@/lib/pot-options";
 import type { VaultRow } from "@/lib/queries/vaults";
+import { parkedValue, VAULT_INSTRUMENTS } from "@/lib/vaults";
 import { vaultFormSchema, type VaultFormValues } from "@/lib/validation/vaults";
 import { cx } from "@/utils/cx";
 
-const NOT_LINKED = "none";
+const NOT_SET = "none";
 
 function defaults(vault: VaultRow | null): VaultFormValues {
   if (!vault)
@@ -32,7 +34,7 @@ function defaults(vault: VaultRow | null): VaultFormValues {
       name: "",
       icon: "piggy-bank",
       color: "chart-7",
-      accountId: "",
+      parked: "",
       monthly: "",
     };
   return {
@@ -43,7 +45,7 @@ function defaults(vault: VaultRow | null): VaultFormValues {
     color: (POT_COLORS as readonly string[]).includes(vault.color)
       ? (vault.color as PotColor)
       : "chart-7",
-    accountId: vault.accountId ?? "",
+    parked: parkedValue(vault),
     // Not edited here: the monthly amount changes via Step up / down.
     monthly: "0",
   };
@@ -61,7 +63,7 @@ export function VaultFormDialog({
   /** null = create a new vault. */
   vault: VaultRow | null;
   month: Month;
-  /** Bank lockers a vault can be saved in (credit cards excluded). */
+  /** Bank lockers a vault can be parked in (credit cards excluded). */
   lockers: { id: string; bank: string }[];
 }) {
   const [isPending, startTransition] = useTransition();
@@ -82,7 +84,7 @@ export function VaultFormDialog({
             name: values.name,
             icon: values.icon,
             color: values.color,
-            accountId: values.accountId,
+            parked: values.parked,
           })
         : await createVault(values);
       if (result.ok) {
@@ -127,31 +129,61 @@ export function VaultFormDialog({
         />
         <Controller
           control={control}
-          name="accountId"
-          render={({ field, fieldState }) => (
-            <div className="flex flex-col gap-1.5">
-              <Label>Locker</Label>
-              <Select
-                aria-label="Locker"
-                selectedKey={field.value === "" ? NOT_LINKED : field.value}
-                onSelectionChange={(k) =>
-                  field.onChange(k === NOT_LINKED ? "" : String(k))
-                }
-              >
-                {[{ id: NOT_LINKED, bank: "Not linked" }, ...lockers].map(
-                  (l) => (
-                    <SelectItem key={l.id} id={l.id}>
-                      {l.bank}
-                    </SelectItem>
-                  ),
-                )}
-              </Select>
-              <p className="text-caption-1-regular text-text-secondary">
-                {fieldState.error?.message ??
-                  "Optional. If the money is saved in a bank account, its invested total counts toward that locker's balance."}
-              </p>
-            </div>
-          )}
+          name="parked"
+          render={({ field, fieldState }) => {
+            const isLocker = field.value.startsWith("a:");
+            return (
+              <div className="flex flex-col gap-1.5">
+                <Label>Parked</Label>
+                <Select
+                  aria-label="Parked"
+                  selectedKey={field.value === "" ? NOT_SET : field.value}
+                  onSelectionChange={(k) =>
+                    field.onChange(k === NOT_SET ? "" : String(k))
+                  }
+                >
+                  <SelectItem id={NOT_SET}>Not set</SelectItem>
+                  <ListBoxSection>
+                    <Header className="px-2 pt-2 pb-1 text-caption-1-medium text-text-tertiary">
+                      Lockers
+                    </Header>
+                    {lockers.map((l) => (
+                      <SelectItem
+                        key={l.id}
+                        id={`a:${l.id}`}
+                        textValue={l.bank}
+                      >
+                        {l.bank}
+                      </SelectItem>
+                    ))}
+                  </ListBoxSection>
+                  <ListBoxSection>
+                    <Header className="px-2 pt-2 pb-1 text-caption-1-medium text-text-tertiary">
+                      Investments
+                    </Header>
+                    {VAULT_INSTRUMENTS.map((name) => (
+                      <SelectItem key={name} id={`i:${name}`}>
+                        {name}
+                      </SelectItem>
+                    ))}
+                  </ListBoxSection>
+                </Select>
+                <p
+                  className={cx(
+                    "text-caption-1-regular",
+                    fieldState.error
+                      ? "text-text-error-primary"
+                      : "text-text-secondary",
+                  )}
+                >
+                  {fieldState.error?.message ??
+                    (isLocker
+                      ? "Saved in this locker: the invested total counts toward its balance."
+                      : "Where the money is saved. Pick a locker if it sits in a bank account.")}
+                </p>
+              </div>
+            );
+          }}
         />
         {!vault && (
           <>

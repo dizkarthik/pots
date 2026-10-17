@@ -9,19 +9,27 @@ import { accounts, vaultAdjustments, vaultAmounts, vaults } from "@/lib/db/schem
 import { toPaise } from "@/lib/money";
 import { addMonths, compareMonths, currentMonth, firstDayOf, formatMonth, monthOf, type Month } from "@/lib/month";
 import { vaultAdjustmentSchema, vaultDetailsSchema, vaultFormSchema, vaultStepSchema } from "@/lib/validation/vaults";
+import { parseParked } from "@/lib/vaults";
 import { failed, invalid, type ActionResult } from "./result";
 
 const idSchema = z.uuid();
 
-/** "" → not linked. Otherwise the locker must exist and be a bank locker (not a credit card). */
-async function resolveLocker(accountId: string): Promise<{ accountId: string | null } | ActionResult> {
-  if (accountId === "") return { accountId: null };
-  const [row] = await getDb().select({ isCredit: accounts.isCredit }).from(accounts).where(eq(accounts.id, accountId));
+/**
+ * Resolves "Parked" to the columns to store. A locker must exist and be a bank
+ * locker (not a credit card); an instrument must be one of VAULT_INSTRUMENTS.
+ */
+async function resolveParked(value: string): Promise<{ accountId: string | null; parkedIn: string | null } | ActionResult> {
+  const parked = parseParked(value);
+  const bad: ActionResult = { ok: false, error: "Please fix the highlighted fields.", fieldErrors: { parked: "Choose where it's parked" } };
+  if (parked === undefined) return bad;
+  if (parked === null) return { accountId: null, parkedIn: null };
+  if (parked.kind === "instrument") return { accountId: null, parkedIn: parked.instrument };
+  const [row] = await getDb().select({ isCredit: accounts.isCredit }).from(accounts).where(eq(accounts.id, parked.accountId));
   if (!row) return failed("That locker no longer exists.");
   if (row.isCredit) {
-    return { ok: false, error: "Please fix the highlighted fields.", fieldErrors: { accountId: "Credit card lockers can't hold vaults" } };
+    return { ok: false, error: "Please fix the highlighted fields.", fieldErrors: { parked: "Credit card lockers can't hold vaults" } };
   }
-  return { accountId };
+  return { accountId: parked.accountId, parkedIn: null };
 }
 
 export async function createVault(input: unknown): Promise<ActionResult> {
@@ -29,15 +37,15 @@ export async function createVault(input: unknown): Promise<ActionResult> {
   const parsed = vaultFormSchema.safeParse(input);
   if (!parsed.success) return invalid(parsed.error);
   const { name, icon, color, monthly } = parsed.data;
-  const locker = await resolveLocker(parsed.data.accountId);
-  if ("ok" in locker) return locker;
+  const parked = await resolveParked(parsed.data.parked);
+  if ("ok" in parked) return parked;
 
   // Starts this month; its first monthly amount applies to this month.
   const db = getDb();
   const id = crypto.randomUUID();
   const startMonth = firstDayOf(currentMonth());
   await db.batch([
-    db.insert(vaults).values({ id, name, icon, color, accountId: locker.accountId, startMonth }),
+    db.insert(vaults).values({ id, name, icon, color, ...parked, startMonth }),
     db.insert(vaultAmounts).values({ vaultId: id, amountPaise: toPaise(monthly)!, effectiveFrom: startMonth }),
   ]);
   revalidatePath("/", "layout");
@@ -50,12 +58,12 @@ export async function updateVaultDetails(vaultId: unknown, input: unknown): Prom
   if (!id.success) return failed("Unknown vault.");
   const parsed = vaultDetailsSchema.safeParse(input);
   if (!parsed.success) return invalid(parsed.error);
-  const locker = await resolveLocker(parsed.data.accountId);
-  if ("ok" in locker) return locker;
+  const parked = await resolveParked(parsed.data.parked);
+  if ("ok" in parked) return parked;
   const { name, icon, color } = parsed.data;
   const updated = await getDb()
     .update(vaults)
-    .set({ name, icon, color, accountId: locker.accountId })
+    .set({ name, icon, color, ...parked })
     .where(eq(vaults.id, id.data))
     .returning({ id: vaults.id });
   if (updated.length === 0) return failed("Unknown vault.");

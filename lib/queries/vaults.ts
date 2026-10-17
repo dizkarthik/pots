@@ -13,9 +13,12 @@ export interface VaultRow {
   name: string;
   icon: string;
   color: string;
-  /** Linked bank locker (money saved there), or null. */
+  /** Parked in a bank locker (money saved there; counts toward its balance), or null. */
   accountId: string | null;
-  bank: string | null;
+  /** Parked in an investment type (Mutual Fund, Stocks…), or null. */
+  parkedIn: string | null;
+  /** Display name of where it's parked (locker name or investment type), or null if not set. */
+  parkedLabel: string | null;
   startMonth: Month;
   monthly: number;
   upcoming: BudgetEntry | null;
@@ -58,7 +61,8 @@ export async function getVaultSummaries(month: Month = currentMonth()): Promise<
       icon: v.icon,
       color: v.color,
       accountId: v.accountId,
-      bank: v.accountId ? (bankById.get(v.accountId) ?? null) : null,
+      parkedIn: v.parkedIn,
+      parkedLabel: v.accountId ? (bankById.get(v.accountId) ?? null) : v.parkedIn,
       startMonth,
       monthly: summary.monthly,
       upcoming: summary.upcoming,

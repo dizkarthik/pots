@@ -4,13 +4,24 @@ import { useState } from "react";
 import { Eye, Plus } from "lucide-react";
 import { Chip } from "@/components/base/badges/chip";
 import { Button } from "@/components/base/buttons/button";
-import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@/components/base/table/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
+} from "@/components/base/table/table";
 import { PotTile } from "@/components/pots/pot-tile";
-import { FilterSelect, ListToolbar, SearchFilter } from "@/components/shared/list-toolbar";
+import {
+  FilterSelect,
+  ListToolbar,
+  SearchFilter,
+} from "@/components/shared/list-toolbar";
 import { Money } from "@/components/shared/money";
 import { VaultFormDialog } from "@/components/vaults/vault-form-dialog";
 import { VaultViewDialog } from "@/components/vaults/vault-view-dialog";
-import { VAULT_MONTH_FILTERS, VAULT_SORT_OPTIONS } from "@/lib/filters/vaults";
+import { VAULT_MONTH_FILTERS, VAULT_SORT_OPTIONS, type FilterOptionList } from "@/lib/filters/vaults";
 import { formatINR } from "@/lib/money";
 import { formatMonth, type Month } from "@/lib/month";
 import type { VaultRow } from "@/lib/queries/vaults";
@@ -19,13 +30,17 @@ export function VaultsView({
   vaults,
   month,
   lockers,
+  parkedOptions,
 }: {
   vaults: VaultRow[];
   month: Month;
   lockers: { id: string; bank: string }[];
+  parkedOptions: FilterOptionList;
 }) {
   // undefined = closed, null = creating, row = editing details
-  const [editing, setEditing] = useState<VaultRow | null | undefined>(undefined);
+  const [editing, setEditing] = useState<VaultRow | null | undefined>(
+    undefined,
+  );
   const [viewingId, setViewingId] = useState<string | null>(null);
   // Look the open vault up by id so the View stays current after each save.
   const viewing = vaults.find((v) => v.id === viewingId) ?? null;
@@ -39,15 +54,27 @@ export function VaultsView({
           </Button>
         }
       >
-        <SearchFilter placeholder="Search vaults" />
-        <FilterSelect param="month" label="This month" options={VAULT_MONTH_FILTERS} className="min-w-48" />
-        <FilterSelect param="sort" label="Sort by" options={VAULT_SORT_OPTIONS} className="min-w-48" />
+        <SearchFilter placeholder="Search vaults or where parked" />
+        <FilterSelect param="parked" label="Parked" options={parkedOptions} className="min-w-44" />
+        <FilterSelect
+          param="month"
+          label="This month"
+          options={VAULT_MONTH_FILTERS}
+          className="min-w-48"
+        />
+        <FilterSelect
+          param="sort"
+          label="Sort by"
+          options={VAULT_SORT_OPTIONS}
+          className="min-w-48"
+        />
       </ListToolbar>
 
       <div className="overflow-hidden rounded-3xl border border-border-button-default bg-background-primary-default">
         <Table aria-label="Vaults">
           <TableHeader>
             <TableColumn isRowHeader>Vault</TableColumn>
+            <TableColumn>Parked</TableColumn>
             <TableColumn className="text-end">Monthly</TableColumn>
             <TableColumn className="text-end">Months</TableColumn>
             <TableColumn className="text-end">Last month</TableColumn>
@@ -59,7 +86,9 @@ export function VaultsView({
           <TableBody
             items={vaults}
             renderEmptyState={() => (
-              <p className="py-10 text-center text-body-regular text-text-secondary">No vaults match these filters.</p>
+              <p className="py-10 text-center text-body-regular text-text-secondary">
+                No vaults match these filters.
+              </p>
             )}
           >
             {(v) => {
@@ -71,20 +100,33 @@ export function VaultsView({
                     <div className="flex items-center gap-3">
                       <PotTile icon={v.icon} color={v.color} />
                       <div className="flex min-w-0 flex-col">
-                        <span className="truncate text-body-medium text-text-primary">{v.name}</span>
+                        <span className="truncate text-body-medium text-text-primary">
+                          {v.name}
+                        </span>
                         <span className="text-caption-1-regular text-text-tertiary">
                           Since {formatMonth(v.startMonth)}
-                          {v.bank && ` · in ${v.bank}`}
                         </span>
                       </div>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {v.parkedLabel ? (
+                      <span className="text-body-regular text-text-primary">
+                        {v.parkedLabel}
+                      </span>
+                    ) : (
+                      <span className="text-text-tertiary">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-end">
                     <div className="flex flex-col items-end gap-0.5">
                       <Money paise={v.monthly} />
                       {v.upcoming && (
                         <span className="text-caption-1-regular text-status-blue-text">
-                          {formatINR(v.upcoming.amountPaise)} from {formatMonth(v.upcoming.effectiveFrom, { short: true })}
+                          {formatINR(v.upcoming.amountPaise)} from{" "}
+                          {formatMonth(v.upcoming.effectiveFrom, {
+                            short: true,
+                          })}
                         </span>
                       )}
                     </div>
@@ -97,7 +139,10 @@ export function VaultsView({
                       <div className="flex flex-col items-end gap-0.5">
                         <Money paise={last.amountPaise} />
                         {last.adjusted && (
-                          <Chip variant="caption" color={lastSkipped ? "neutral" : "blue"}>
+                          <Chip
+                            variant="caption"
+                            color={lastSkipped ? "neutral" : "blue"}
+                          >
                             {lastSkipped ? "Skipped" : "Edited"}
                           </Chip>
                         )}
@@ -107,7 +152,10 @@ export function VaultsView({
                     )}
                   </TableCell>
                   <TableCell className="text-end">
-                    <Money paise={v.investedTotal} className="text-body-medium" />
+                    <Money
+                      paise={v.investedTotal}
+                      className="text-body-medium"
+                    />
                   </TableCell>
                   <TableCell>
                     <Button
