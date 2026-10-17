@@ -1,25 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarCog, Ellipsis, Pencil, Plus } from "lucide-react";
+import { Eye, Plus } from "lucide-react";
 import { Chip } from "@/components/base/badges/chip";
 import { Button } from "@/components/base/buttons/button";
-import { Dropdown, DropdownItem, DropdownPopover, DropdownTrigger } from "@/components/base/dropdown/dropdown";
 import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@/components/base/table/table";
 import { PotTile } from "@/components/pots/pot-tile";
 import { FilterSelect, ListToolbar, SearchFilter } from "@/components/shared/list-toolbar";
 import { Money } from "@/components/shared/money";
-import { AdjustMonthDialog } from "@/components/vaults/adjust-month-dialog";
 import { VaultFormDialog } from "@/components/vaults/vault-form-dialog";
+import { VaultViewDialog } from "@/components/vaults/vault-view-dialog";
 import { VAULT_MONTH_FILTERS, VAULT_SORT_OPTIONS } from "@/lib/filters/vaults";
 import { formatINR } from "@/lib/money";
 import { formatMonth, type Month } from "@/lib/month";
 import type { VaultRow } from "@/lib/queries/vaults";
 
-export function VaultsView({ vaults, month, nextMonth }: { vaults: VaultRow[]; month: Month; nextMonth: Month }) {
-  // undefined = closed, null = creating, row = editing
+export function VaultsView({ vaults, month }: { vaults: VaultRow[]; month: Month }) {
+  // undefined = closed, null = creating, row = editing details
   const [editing, setEditing] = useState<VaultRow | null | undefined>(undefined);
-  const [adjusting, setAdjusting] = useState<VaultRow | null>(null);
+  const [viewingId, setViewingId] = useState<string | null>(null);
+  // Look the open vault up by id so the View stays current after each save.
+  const viewing = vaults.find((v) => v.id === viewingId) ?? null;
 
   return (
     <>
@@ -40,10 +41,11 @@ export function VaultsView({ vaults, month, nextMonth }: { vaults: VaultRow[]; m
           <TableHeader>
             <TableColumn isRowHeader>Vault</TableColumn>
             <TableColumn className="text-end">Monthly</TableColumn>
-            <TableColumn className="text-end">{formatMonth(month)}</TableColumn>
-            <TableColumn className="text-end">Invested so far</TableColumn>
-            <TableColumn className="w-12">
-              <span className="sr-only">Actions</span>
+            <TableColumn className="text-end">Months</TableColumn>
+            <TableColumn className="text-end">Last month</TableColumn>
+            <TableColumn className="text-end">Invested</TableColumn>
+            <TableColumn className="w-24">
+              <span className="sr-only">View</span>
             </TableColumn>
           </TableHeader>
           <TableBody
@@ -53,7 +55,8 @@ export function VaultsView({ vaults, month, nextMonth }: { vaults: VaultRow[]; m
             )}
           >
             {(v) => {
-              const skipped = v.thisMonth.adjusted && v.thisMonth.amountPaise === 0;
+              const last = v.lastMonth;
+              const lastSkipped = last?.adjusted && last.amountPaise === 0;
               return (
                 <TableRow id={v.id}>
                   <TableCell>
@@ -75,21 +78,36 @@ export function VaultsView({ vaults, month, nextMonth }: { vaults: VaultRow[]; m
                       )}
                     </div>
                   </TableCell>
+                  <TableCell className="text-end tabular-nums">
+                    {v.months} {v.months === 1 ? "month" : "months"}
+                  </TableCell>
                   <TableCell className="text-end">
-                    <div className="flex flex-col items-end gap-0.5">
-                      <Money paise={v.thisMonth.amountPaise} />
-                      {v.thisMonth.adjusted && (
-                        <Chip variant="caption" color={skipped ? "neutral" : "blue"}>
-                          {skipped ? "Skipped" : "Adjusted"}
-                        </Chip>
-                      )}
-                    </div>
+                    {last ? (
+                      <div className="flex flex-col items-end gap-0.5">
+                        <Money paise={last.amountPaise} />
+                        {last.adjusted && (
+                          <Chip variant="caption" color={lastSkipped ? "neutral" : "blue"}>
+                            {lastSkipped ? "Skipped" : "Edited"}
+                          </Chip>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-text-tertiary">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-end">
                     <Money paise={v.investedTotal} className="text-body-medium" />
                   </TableCell>
                   <TableCell>
-                    <VaultActions vault={v} onEdit={() => setEditing(v)} onAdjust={() => setAdjusting(v)} />
+                    <Button
+                      variant="secondary"
+                      size="small"
+                      leadingIcon={Eye}
+                      aria-label={`View ${v.name}`}
+                      onClick={() => setViewingId(v.id)}
+                    >
+                      View
+                    </Button>
                   </TableCell>
                 </TableRow>
               );
@@ -103,37 +121,14 @@ export function VaultsView({ vaults, month, nextMonth }: { vaults: VaultRow[]; m
         onOpenChange={(open) => !open && setEditing(undefined)}
         vault={editing ?? null}
         month={month}
-        nextMonth={nextMonth}
       />
-      <AdjustMonthDialog vault={adjusting} currentMonth={month} onClose={() => setAdjusting(null)} />
+      <VaultViewDialog
+        key={viewing?.id ?? "none"}
+        vault={editing === undefined ? viewing : null}
+        month={month}
+        onClose={() => setViewingId(null)}
+        onEditDetails={() => viewing && setEditing(viewing)}
+      />
     </>
-  );
-}
-
-function VaultActions({ vault, onEdit, onAdjust }: { vault: VaultRow; onEdit: () => void; onAdjust: () => void }) {
-  const [open, setOpen] = useState(false);
-  const pick = (fn: () => void) => () => {
-    setOpen(false);
-    fn();
-  };
-  return (
-    <Dropdown isOpen={open} onOpenChange={setOpen}>
-      <DropdownTrigger
-        aria-label={`Actions for ${vault.name}`}
-        className="flex size-8 items-center justify-center rounded-lg text-foreground-icon-secondary hover:bg-background-primary-hover"
-      >
-        <Ellipsis className="size-4" aria-hidden />
-      </DropdownTrigger>
-      <DropdownPopover aria-label={`Actions for ${vault.name}`} placement="bottom end" className="w-52">
-        <DropdownItem onSelect={pick(onEdit)}>
-          <Pencil className="size-4 text-foreground-icon-secondary" aria-hidden />
-          Edit
-        </DropdownItem>
-        <DropdownItem onSelect={pick(onAdjust)}>
-          <CalendarCog className="size-4 text-foreground-icon-secondary" aria-hidden />
-          Adjust a month
-        </DropdownItem>
-      </DropdownPopover>
-    </Dropdown>
   );
 }

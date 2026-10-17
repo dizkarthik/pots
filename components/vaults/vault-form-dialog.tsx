@@ -6,23 +6,35 @@ import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { Dialog } from "@/components/shared/dialog";
-import { ColorPicker, IconPicker } from "@/components/shared/icon-color-pickers";
-import { createVault, updateVault } from "@/lib/actions/vaults";
-import { formatINR, paiseToInput } from "@/lib/money";
+import {
+  ColorPicker,
+  IconPicker,
+} from "@/components/shared/icon-color-pickers";
+import { createVault, updateVaultDetails } from "@/lib/actions/vaults";
 import { formatMonth, type Month } from "@/lib/month";
-import { POT_COLORS, POT_ICON_NAMES, type PotColor, type PotIconName } from "@/lib/pot-options";
+import {
+  POT_COLORS,
+  POT_ICON_NAMES,
+  type PotColor,
+  type PotIconName,
+} from "@/lib/pot-options";
 import type { VaultRow } from "@/lib/queries/vaults";
 import { vaultFormSchema, type VaultFormValues } from "@/lib/validation/vaults";
 import { cx } from "@/utils/cx";
 
 function defaults(vault: VaultRow | null): VaultFormValues {
-  if (!vault) return { name: "", icon: "piggy-bank", color: "chart-7", monthly: "" };
+  if (!vault)
+    return { name: "", icon: "piggy-bank", color: "chart-7", monthly: "" };
   return {
     name: vault.name,
-    icon: (POT_ICON_NAMES as string[]).includes(vault.icon) ? (vault.icon as PotIconName) : "piggy-bank",
-    color: (POT_COLORS as readonly string[]).includes(vault.color) ? (vault.color as PotColor) : "chart-7",
-    // Prefill what will apply next month, so saving other fields keeps a pending change.
-    monthly: paiseToInput(vault.upcoming?.amountPaise ?? vault.monthly),
+    icon: (POT_ICON_NAMES as string[]).includes(vault.icon)
+      ? (vault.icon as PotIconName)
+      : "piggy-bank",
+    color: (POT_COLORS as readonly string[]).includes(vault.color)
+      ? (vault.color as PotColor)
+      : "chart-7",
+    // Not edited here: the monthly amount changes via Step up / down.
+    monthly: "0",
   };
 }
 
@@ -31,20 +43,19 @@ export function VaultFormDialog({
   onOpenChange,
   vault,
   month,
-  nextMonth,
 }: {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   /** null = create a new vault. */
   vault: VaultRow | null;
   month: Month;
-  nextMonth: Month;
 }) {
   const [isPending, startTransition] = useTransition();
-  const { control, handleSubmit, reset, setError, formState } = useForm<VaultFormValues>({
-    resolver: zodResolver(vaultFormSchema),
-    defaultValues: defaults(vault),
-  });
+  const { control, handleSubmit, reset, setError, formState } =
+    useForm<VaultFormValues>({
+      resolver: zodResolver(vaultFormSchema),
+      defaultValues: defaults(vault),
+    });
 
   useEffect(() => {
     if (isOpen) reset(defaults(vault));
@@ -52,7 +63,13 @@ export function VaultFormDialog({
 
   const onSubmit = handleSubmit((values) =>
     startTransition(async () => {
-      const result = vault ? await updateVault(vault.id, values) : await createVault(values);
+      const result = vault
+        ? await updateVaultDetails(vault.id, {
+            name: values.name,
+            icon: values.icon,
+            color: values.color,
+          })
+        : await createVault(values);
       if (result.ok) {
         onOpenChange(false);
         return;
@@ -64,16 +81,16 @@ export function VaultFormDialog({
     }),
   );
 
-  const hint = vault
-    ? `Applies from ${formatMonth(nextMonth)}. ${formatMonth(month)} keeps ${formatINR(vault.monthly)}. To change just one month, use “Adjust a month”.`
-    : `Added automatically every month, starting ${formatMonth(month)}.`;
+  const hint = `Added automatically every month, starting ${formatMonth(month)}. Change it later with Step up / down.`;
 
   return (
     <Dialog
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      title={vault ? `Edit ${vault.name}` : "New vault"}
-      description={vault ? undefined : "An investment that grows by a monthly amount."}
+      title={vault ? `Edit ${vault.name} details` : "New vault"}
+      description={
+        vault ? undefined : "An investment that grows by a monthly amount."
+      }
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
         <Controller
@@ -93,36 +110,55 @@ export function VaultFormDialog({
             />
           )}
         />
-        <Controller
-          control={control}
-          name="monthly"
-          render={({ field, fieldState }) => (
-            <Input
-              label="Monthly investment"
-              placeholder="0"
-              inputMode="numeric"
-              leadingAddon={<span className="text-body-medium text-text-tertiary">₹</span>}
-              value={field.value}
-              onChange={field.onChange}
-              onBlur={field.onBlur}
-              isInvalid={fieldState.invalid}
-              validationBehavior="aria"
+        {!vault && (
+          <>
+            <Controller
+              control={control}
+              name="monthly"
+              render={({ field, fieldState }) => (
+                <Input
+                  label="Monthly investment"
+                  placeholder="0"
+                  inputMode="numeric"
+                  leadingAddon={
+                    <span className="text-body-medium text-text-tertiary">
+                      ₹
+                    </span>
+                  }
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  isInvalid={fieldState.invalid}
+                  validationBehavior="aria"
+                />
+              )}
             />
-          )}
-        />
-        <p className={cx("-mt-2 text-caption-1-regular", formState.errors.monthly ? "text-text-error-primary" : "text-text-secondary")}>
-          {formState.errors.monthly?.message ?? hint}
-        </p>
+            <p
+              className={cx(
+                "-mt-2 text-caption-1-regular",
+                formState.errors.monthly
+                  ? "text-text-error-primary"
+                  : "text-text-secondary",
+              )}
+            >
+              {formState.errors.monthly?.message ?? hint}
+            </p>
+          </>
+        )}
 
         <Controller
           control={control}
           name="icon"
-          render={({ field }) => <IconPicker value={field.value} onChange={field.onChange} />}
+          render={({ field }) => (
+            <IconPicker value={field.value} onChange={field.onChange} />
+          )}
         />
         <Controller
           control={control}
           name="color"
-          render={({ field }) => <ColorPicker value={field.value} onChange={field.onChange} />}
+          render={({ field }) => (
+            <ColorPicker value={field.value} onChange={field.onChange} />
+          )}
         />
 
         {formState.errors.root && (

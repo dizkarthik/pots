@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyBudgetEdit } from "./budget";
-import { adjustableMonths, computeVault, type VaultLedger } from "./vaults";
+import { adjustableMonths, computeVault, stepStartMonths, vaultHistory, type VaultLedger } from "./vaults";
 
 const R = (rupees: number) => rupees * 100;
 const ist = (date: string) => new Date(`${date}T12:00:00+05:30`);
@@ -67,5 +67,47 @@ describe("computeVault", () => {
 describe("adjustableMonths", () => {
   it("lists the start month through the current month, newest first", () => {
     expect(adjustableMonths("2026-08", "2026-10")).toEqual(["2026-10", "2026-09", "2026-08"]);
+  });
+});
+
+describe("months running and last month", () => {
+  it("counts months from the start through the current month", () => {
+    expect(computeVault(sip(), "2026-10").months).toBe(4);
+    expect(computeVault(sip(), "2029-06").months).toBe(36);
+    expect(computeVault(sip(), "2026-06").months).toBe(0);
+  });
+
+  it("reports last month's investment, or null in the first month", () => {
+    const v = sip({ adjustments: [{ month: "2026-09", amountPaise: 0 }] });
+    expect(computeVault(v, "2026-10").lastMonth).toEqual({ month: "2026-09", amountPaise: 0, autoPaise: R(5000), adjusted: true });
+    expect(computeVault(v, "2026-07").lastMonth).toBeNull();
+  });
+});
+
+describe("step up / down", () => {
+  it("a step recorded in a past month changes that month and every month after it", () => {
+    const stepped = sip({
+      amounts: [
+        { effectiveFrom: "2026-07", amountPaise: R(5000) },
+        { effectiveFrom: "2026-09", amountPaise: R(7000) }, // stepped up from Sep
+      ],
+    });
+    expect(computeVault(stepped, "2026-10").investedTotal).toBe(R(5000 + 5000 + 7000 + 7000));
+    expect(computeVault(stepped, "2026-08").investedTotal).toBe(R(10000)); // months before the step unchanged
+  });
+
+  it("a later step still takes over from its own month", () => {
+    const stepped = sip({
+      amounts: [
+        { effectiveFrom: "2026-07", amountPaise: R(5000) },
+        { effectiveFrom: "2026-08", amountPaise: R(3000) }, // stepped down from Aug
+        { effectiveFrom: "2026-10", amountPaise: R(6000) }, // stepped up again from Oct
+      ],
+    });
+    expect(vaultHistory(stepped, "2026-10").map((m) => m.amountPaise / 100)).toEqual([6000, 3000, 3000, 5000]);
+  });
+
+  it("can start from next month or any month back to the vault's start", () => {
+    expect(stepStartMonths("2026-08", "2026-10")).toEqual(["2026-11", "2026-10", "2026-09", "2026-08"]);
   });
 });

@@ -4,12 +4,11 @@ import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
-import { budgetInEffect, nextBudgetEffectiveFrom } from "@/lib/budget";
 import { getDb } from "@/lib/db/client";
 import { vaultAdjustments, vaultAmounts, vaults } from "@/lib/db/schema";
 import { toPaise } from "@/lib/money";
-import { compareMonths, currentMonth, firstDayOf, formatMonth, monthOf, type Month } from "@/lib/month";
-import { vaultAdjustmentSchema, vaultFormSchema } from "@/lib/validation/vaults";
+import { addMonths, compareMonths, currentMonth, firstDayOf, formatMonth, monthOf, type Month } from "@/lib/month";
+import { vaultAdjustmentSchema, vaultDetailsSchema, vaultFormSchema, vaultStepSchema } from "@/lib/validation/vaults";
 import { failed, invalid, type ActionResult } from "./result";
 
 const idSchema = z.uuid();
@@ -32,41 +31,57 @@ export async function createVault(input: unknown): Promise<ActionResult> {
   return { ok: true };
 }
 
-export async function updateVault(vaultId: unknown, input: unknown): Promise<ActionResult> {
+export async function updateVaultDetails(vaultId: unknown, input: unknown): Promise<ActionResult> {
   await requireSession();
   const id = idSchema.safeParse(vaultId);
   if (!id.success) return failed("Unknown vault.");
-  const parsed = vaultFormSchema.safeParse(input);
+  const parsed = vaultDetailsSchema.safeParse(input);
   if (!parsed.success) return invalid(parsed.error);
-  const { name, icon, color, monthly } = parsed.data;
+  const updated = await getDb()
+    .update(vaults)
+    .set(parsed.data)
+    .where(eq(vaults.id, id.data))
+    .returning({ id: vaults.id });
+  if (updated.length === 0) return failed("Unknown vault.");
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/**
+ * Step up / down: the monthly amount becomes `amount` from `from` onward (until
+ * a later step). `from` may be next month or any month back to the vault's
+ * start, so a step-up that already happened can be recorded. One-off month
+ * edits (adjustments) still take precedence for their own month.
+ */
+export async function stepVaultAmount(vaultId: unknown, input: unknown): Promise<ActionResult> {
+  await requireSession();
+  const id = idSchema.safeParse(vaultId);
+  if (!id.success) return failed("Unknown vault.");
+  const parsed = vaultStepSchema.safeParse(input);
+  if (!parsed.success) return invalid(parsed.error);
+  const from = parsed.data.from as Month;
 
   const db = getDb();
-  const amounts = await db.select().from(vaultAmounts).where(eq(vaultAmounts.vaultId, id.data));
-  if (amounts.length === 0) return failed("Unknown vault.");
-
-  // Monthly-amount changes apply from the first day of next month (server-computed).
-  const amountPaise = toPaise(monthly)!;
-  const effectiveFrom = nextBudgetEffectiveFrom();
-  const inEffectNextMonth = budgetInEffect(
-    amounts.map((a) => ({ effectiveFrom: monthOf(a.effectiveFrom), amountPaise: a.amountPaise })),
-    effectiveFrom,
-  );
-
-  const updateRow = db.update(vaults).set({ name, icon, color }).where(eq(vaults.id, id.data));
-  if (inEffectNextMonth?.amountPaise === amountPaise) {
-    await updateRow;
-  } else {
-    await db.batch([
-      updateRow,
-      db
-        .insert(vaultAmounts)
-        .values({ vaultId: id.data, amountPaise, effectiveFrom: firstDayOf(effectiveFrom) })
-        .onConflictDoUpdate({
-          target: [vaultAmounts.vaultId, vaultAmounts.effectiveFrom],
-          set: { amountPaise, updatedAt: sql`now()` },
-        }),
-    ]);
+  const [vault] = await db.select({ startMonth: vaults.startMonth }).from(vaults).where(eq(vaults.id, id.data));
+  if (!vault) return failed("Unknown vault.");
+  const start = monthOf(vault.startMonth);
+  const latest = addMonths(currentMonth(), 1);
+  if (compareMonths(from, start) < 0 || compareMonths(from, latest) > 0) {
+    return {
+      ok: false,
+      error: "Please fix the highlighted fields.",
+      fieldErrors: { from: `Pick a month from ${formatMonth(start)} to ${formatMonth(latest)}` },
+    };
   }
+
+  const amountPaise = toPaise(parsed.data.amount)!;
+  await db
+    .insert(vaultAmounts)
+    .values({ vaultId: id.data, amountPaise, effectiveFrom: firstDayOf(from) })
+    .onConflictDoUpdate({
+      target: [vaultAmounts.vaultId, vaultAmounts.effectiveFrom],
+      set: { amountPaise, updatedAt: sql`now()` },
+    });
   revalidatePath("/", "layout");
   return { ok: true };
 }

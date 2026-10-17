@@ -17,6 +17,10 @@ export interface VaultRow {
   monthly: number;
   upcoming: BudgetEntry | null;
   thisMonth: VaultMonth;
+  /** Last month's line, or null if the vault started this month. */
+  lastMonth: VaultMonth | null;
+  /** Months the vault has been running (start through the current month). */
+  months: number;
   investedTotal: number;
   /** Amount history, oldest first. */
   history: BudgetEntry[];
@@ -52,6 +56,8 @@ export async function getVaultSummaries(month: Month = currentMonth()): Promise<
       monthly: summary.monthly,
       upcoming: summary.upcoming,
       thisMonth: summary.thisMonth,
+      lastMonth: summary.lastMonth,
+      months: summary.months,
       investedTotal: summary.investedTotal,
       history: amounts,
       adjustments,

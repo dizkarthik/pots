@@ -1,5 +1,5 @@
 import { budgetInEffect, upcomingBudget, type BudgetEntry } from "./budget";
-import { compareMonths, monthsBetween, type Month } from "./month";
+import { addMonths, compareMonths, monthsBetween, type Month } from "./month";
 
 /*
  * Vault invested total — COMPUTED, never stored:
@@ -45,6 +45,10 @@ export function vaultMonth(ledger: VaultLedger, month: Month): VaultMonth {
 export interface VaultSummary {
   /** Total invested from the start month through M. */
   investedTotal: number;
+  /** How long the vault has been running: months from its start through M (0 before it starts). */
+  months: number;
+  /** Last month's line, or null if the vault started this month. */
+  lastMonth: VaultMonth | null;
   /** This month's line (amount actually invested, auto amount, adjusted?). */
   thisMonth: VaultMonth;
   /** Monthly amount in effect for M. */
@@ -58,12 +62,30 @@ export function computeVault(ledger: VaultLedger, month: Month): VaultSummary {
   for (const m of monthsBetween(ledger.startMonth, month)) investedTotal += vaultMonth(ledger, m).amountPaise;
   const monthly = budgetInEffect(ledger.amounts, month)?.amountPaise ?? 0;
   const next = upcomingBudget(ledger.amounts, month);
+  const previous = addMonths(month, -1);
   return {
     investedTotal,
+    months: monthsBetween(ledger.startMonth, month).length,
+    lastMonth: compareMonths(previous, ledger.startMonth) >= 0 ? vaultMonth(ledger, previous) : null,
     thisMonth: vaultMonth(ledger, month),
     monthly,
     upcoming: next && next.amountPaise !== monthly ? next : null,
   };
+}
+
+/** Every month from the vault's start through `month`, newest first (the "View" list). */
+export function vaultHistory(ledger: VaultLedger, month: Month): VaultMonth[] {
+  return monthsBetween(ledger.startMonth, month)
+    .reverse()
+    .map((m) => vaultMonth(ledger, m));
+}
+
+/**
+ * Months a step up/down can start from: next month, or any month back to the
+ * vault's start (a step-up that already happened can be recorded). Newest first.
+ */
+export function stepStartMonths(startMonth: Month, currentMonth: Month): Month[] {
+  return monthsBetween(startMonth, addMonths(currentMonth, 1)).reverse();
 }
 
 /** Months a vault can be adjusted for: from its start month to the current month, newest first. */

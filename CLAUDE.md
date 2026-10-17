@@ -60,8 +60,9 @@ balance(pot, M) = Σ budget in effect for each month m in [pot.start_month, M], 
 ### Vaults (investments)
 - A vault has a monthly investment amount that is **added automatically every month** — computed, never stored, no cron:
   `invested(vault, M) = Σ for m in [start_month, M]: adjustment(m) if present, else the monthly amount in effect for m`.
-- Monthly-amount edits follow the pot-budget rule: upsert `vault_amounts(vault_id, effective_from = first of NEXT month)`; creation writes the start-month row.
-- **Adjust a month** (`vault_adjustments`, unique per vault+month) sets a one-off amount for the current or a past month; ₹0 = skipped; "Reset to automatic" deletes it. Future months can't be adjusted.
+- **Step up / down** (`stepVaultAmount`) changes the monthly amount **from a chosen month onward** (until a later step). Unlike pot budgets, the start month may be **next month or any past month back to the vault's start**, so past totals can change. Creation writes the start-month row; a step at the start month replaces it.
+- **Edit a month** (`vault_adjustments`, unique per vault+month) sets a one-off invested amount for the current or a past month; ₹0 = skipped; "Reset to plan" deletes it. Adjustments win over the monthly amount for their month.
+- Vaults table columns: Vault · Monthly · Months (months running since start, shown as "N months") · Last month · Invested · View. View holds the summary, Step up / down, month-by-month inline edits and "Edit details" (name/icon/colour only).
 - Vaults track the **invested total only** (no current value / returns) and have **no locker link**.
 - Pure logic in `lib/vaults.ts` (+ tests); reads in `lib/queries/vaults.ts`; actions in `lib/actions/vaults.ts`.
 
