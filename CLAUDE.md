@@ -57,14 +57,22 @@ balance(pot, M) = Σ budget in effect for each month m in [pot.start_month, M], 
   - Paid via options (`buildPaidViaOptions` in `lib/payment-methods.ts`): a locker WITH sub methods appears only as those sub methods; a locker WITHOUT appears as itself (paid directly). The server re-checks this in `resolvePaidVia` (`lib/actions/expenses.ts`).
 - Expense list filters: search, multi-select pots (`?pot=id1,id2`), date range, sort. No locker or amount filters.
 
+### Vaults (investments)
+- A vault has a monthly investment amount that is **added automatically every month** — computed, never stored, no cron:
+  `invested(vault, M) = Σ for m in [start_month, M]: adjustment(m) if present, else the monthly amount in effect for m`.
+- Monthly-amount edits follow the pot-budget rule: upsert `vault_amounts(vault_id, effective_from = first of NEXT month)`; creation writes the start-month row.
+- **Adjust a month** (`vault_adjustments`, unique per vault+month) sets a one-off amount for the current or a past month; ₹0 = skipped; "Reset to automatic" deletes it. Future months can't be adjusted.
+- Vaults track the **invested total only** (no current value / returns) and have **no locker link**.
+- Pure logic in `lib/vaults.ts` (+ tests); reads in `lib/queries/vaults.ts`; actions in `lib/actions/vaults.ts`.
+
 ## Folder structure
 ```
 app/(auth)/login/          login page + form
 app/(app)/                 authenticated shell (sidebar) — page.tsx is the dashboard
-app/(app)/{expenses,pots,lockers}/
+app/(app)/{expenses,pots,lockers,vaults}/
 components/base, components/application, components/foundations   BoardUI (source-owned)
 components/app-shell/      sidebar, page header
-components/{expenses,pots,lockers,dashboard,charts,motion}/        feature + registry components
+components/{expenses,pots,lockers,vaults,dashboard,charts,motion}/        feature + registry components
 lib/auth/                  session (edge-safe) + server helpers
 lib/actions/               server actions ("use server")
 lib/queries/               server-side reads

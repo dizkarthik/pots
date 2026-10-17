@@ -3,19 +3,19 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Radio, RadioGroup } from "react-aria-components";
 import { Chip } from "@/components/base/badges/chip";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { Label } from "@/components/base/input/label";
 import { Select, SelectItem } from "@/components/base/select/select";
 import { Dialog } from "@/components/shared/dialog";
+import { ColorPicker, IconPicker } from "@/components/shared/icon-color-pickers";
 import { FieldError } from "@/components/shared/field-error";
 import { createPot, updatePot } from "@/lib/actions/pots";
 import type { ActionResult } from "@/lib/actions/result";
 import { formatINR, paiseToInput } from "@/lib/money";
 import { compareMonths, formatMonth, type Month } from "@/lib/month";
-import { POT_COLOR_CLASSES, POT_COLORS, POT_ICON_NAMES, POT_ICONS, type PotColor, type PotIconName } from "@/lib/pot-options";
+import { POT_COLORS, POT_ICON_NAMES, type PotColor, type PotIconName } from "@/lib/pot-options";
 import type { PotSummary } from "@/lib/queries/pots";
 import { potFormSchema, type PotFormValues } from "@/lib/validation/pots";
 import { cx } from "@/utils/cx";
@@ -160,66 +160,13 @@ export function PotFormDialog({
         <Controller
           control={control}
           name="icon"
-          render={({ field }) => (
-            <RadioGroup
-              value={field.value}
-              onChange={field.onChange}
-              orientation="horizontal"
-              className="flex flex-col gap-1.5"
-            >
-              <Label>Icon</Label>
-              <div className="flex flex-wrap gap-1.5">
-                {POT_ICON_NAMES.map((name) => {
-                  const Icon = POT_ICONS[name];
-                  return (
-                    <Radio
-                      key={name}
-                      value={name}
-                      aria-label={name.replace(/-/g, " ")}
-                      className={({ isSelected, isFocusVisible }) =>
-                        cx(
-                          "flex size-9 cursor-pointer items-center justify-center rounded-xl border text-foreground-icon-secondary transition-colors",
-                          isSelected
-                            ? "border-accent-500 bg-accent-500/10 text-accent-600"
-                            : "border-border-button-default hover:bg-background-primary-hover",
-                          isFocusVisible && "ring-2 ring-border-focus-ring",
-                        )
-                      }
-                    >
-                      <Icon className="size-[18px]" aria-hidden />
-                    </Radio>
-                  );
-                })}
-              </div>
-            </RadioGroup>
-          )}
+          render={({ field }) => <IconPicker value={field.value} onChange={field.onChange} />}
         />
 
         <Controller
           control={control}
           name="color"
-          render={({ field }) => (
-            <RadioGroup value={field.value} onChange={field.onChange} orientation="horizontal" className="flex flex-col gap-1.5">
-              <Label>Colour</Label>
-              <div className="flex flex-wrap gap-2">
-                {POT_COLORS.map((color, i) => (
-                  <Radio
-                    key={color}
-                    value={color}
-                    aria-label={`Colour ${i + 1}`}
-                    className={({ isSelected, isFocusVisible }) =>
-                      cx(
-                        "size-7 cursor-pointer rounded-full ring-offset-2 ring-offset-background-primary-default transition-shadow",
-                        POT_COLOR_CLASSES[color].swatch,
-                        isSelected && "ring-2 ring-text-primary",
-                        isFocusVisible && "ring-2 ring-border-focus-ring",
-                      )
-                    }
-                  />
-                ))}
-              </div>
-            </RadioGroup>
-          )}
+          render={({ field }) => <ColorPicker value={field.value} onChange={field.onChange} />}
         />
 
         {pot && <BudgetHistory pot={pot} month={month} />}

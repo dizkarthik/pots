@@ -149,6 +149,64 @@ export const expenses = pgTable(
   ],
 );
 
+/**
+ * Vaults: investments. Each month a vault's monthly amount is added
+ * automatically (computed in lib/vaults.ts, never stored), unless that month
+ * has an adjustment (a different amount, or ₹0 = skipped).
+ */
+export const vaults = pgTable(
+  "vaults",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    icon: text("icon").notNull().default("piggy-bank"),
+    color: text("color").notNull().default("chart-1"),
+    startMonth: day("start_month").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  () => [check("vaults_start_month_first_day", firstOfMonth("start_month"))],
+);
+
+/** Monthly amount history; edits upsert (vault_id, first of NEXT month), like pot budgets. */
+export const vaultAmounts = pgTable(
+  "vault_amounts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    vaultId: uuid("vault_id")
+      .notNull()
+      .references(() => vaults.id, { onDelete: "cascade" }),
+    amountPaise: paise("amount_paise").notNull(),
+    effectiveFrom: day("effective_from").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("vault_amounts_vault_effective_from").on(t.vaultId, t.effectiveFrom),
+    check("vault_amounts_amount_non_negative", sql.raw("amount_paise >= 0")),
+    check("vault_amounts_effective_first_day", firstOfMonth("effective_from")),
+  ],
+);
+
+/** A one-off amount for a specific month (₹0 = skipped), overriding the monthly amount. */
+export const vaultAdjustments = pgTable(
+  "vault_adjustments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    vaultId: uuid("vault_id")
+      .notNull()
+      .references(() => vaults.id, { onDelete: "cascade" }),
+    month: day("month").notNull(),
+    amountPaise: paise("amount_paise").notNull(),
+    note: text("note"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("vault_adjustments_vault_month").on(t.vaultId, t.month),
+    check("vault_adjustments_amount_non_negative", sql.raw("amount_paise >= 0")),
+    check("vault_adjustments_month_first_day", firstOfMonth("month")),
+  ],
+);
+
+export type Vault = typeof vaults.$inferSelect;
 export type Account = typeof accounts.$inferSelect;
 export type Pot = typeof pots.$inferSelect;
 export type PotBudget = typeof potBudgets.$inferSelect;

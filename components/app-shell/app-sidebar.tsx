@@ -7,6 +7,7 @@ import {
   Landmark,
   LayoutDashboard,
   LogOut,
+  PiggyBank,
   Receipt,
   Vault,
   PanelLeftClose,
@@ -28,6 +29,7 @@ const NAV: { href: string; label: string; icon: IconComponent }[] = [
   { href: "/expenses", label: "Expenses", icon: Receipt },
   { href: "/pots", label: "Pots", icon: Vault },
   { href: "/lockers", label: "Lockers", icon: Landmark },
+  { href: "/vaults", label: "Vaults", icon: PiggyBank },
 ];
 
 function isActive(pathname: string, href: string) {
