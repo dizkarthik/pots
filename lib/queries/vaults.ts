@@ -4,7 +4,7 @@ import { asc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth";
 import type { BudgetEntry } from "@/lib/budget";
 import { getDb } from "@/lib/db/client";
-import { vaultAdjustments, vaultAmounts, vaults } from "@/lib/db/schema";
+import { accounts, vaultAdjustments, vaultAmounts, vaults } from "@/lib/db/schema";
 import { currentMonth, monthOf, type Month } from "@/lib/month";
 import { computeVault, type VaultAdjustment, type VaultMonth } from "@/lib/vaults";
 
@@ -13,6 +13,9 @@ export interface VaultRow {
   name: string;
   icon: string;
   color: string;
+  /** Linked bank locker (money saved there), or null. */
+  accountId: string | null;
+  bank: string | null;
   startMonth: Month;
   monthly: number;
   upcoming: BudgetEntry | null;
@@ -31,11 +34,13 @@ export interface VaultRow {
 export async function getVaultSummaries(month: Month = currentMonth()): Promise<{ month: Month; vaults: VaultRow[] }> {
   await requireSession();
   const db = getDb();
-  const [vaultRows, amountRows, adjustmentRows] = await Promise.all([
+  const [vaultRows, amountRows, adjustmentRows, accountRows] = await Promise.all([
     db.select().from(vaults).orderBy(asc(vaults.name)),
     db.select().from(vaultAmounts).orderBy(asc(vaultAmounts.effectiveFrom)),
     db.select().from(vaultAdjustments),
+    db.select({ id: accounts.id, bank: accounts.bank }).from(accounts),
   ]);
+  const bankById = new Map(accountRows.map((a) => [a.id, a.bank]));
 
   const rows = vaultRows.map((v): VaultRow => {
     const amounts = amountRows
@@ -52,6 +57,8 @@ export async function getVaultSummaries(month: Month = currentMonth()): Promise<
       name: v.name,
       icon: v.icon,
       color: v.color,
+      accountId: v.accountId,
+      bank: v.accountId ? (bankById.get(v.accountId) ?? null) : null,
       startMonth,
       monthly: summary.monthly,
       upcoming: summary.upcoming,

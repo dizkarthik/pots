@@ -161,10 +161,15 @@ export const vaults = pgTable(
     name: text("name").notNull(),
     icon: text("icon").notNull().default("piggy-bank"),
     color: text("color").notNull().default("chart-1"),
+    /** Optional bank locker the money is saved in; its invested total counts toward that locker's balance. */
+    accountId: uuid("account_id").references(() => accounts.id, { onDelete: "restrict" }),
     startMonth: day("start_month").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  () => [check("vaults_start_month_first_day", firstOfMonth("start_month"))],
+  (t) => [
+    check("vaults_start_month_first_day", firstOfMonth("start_month")),
+    index("vaults_account_idx").on(t.accountId),
+  ],
 );
 
 /** Monthly amount history; edits upsert (vault_id, first of NEXT month), like pot budgets. */

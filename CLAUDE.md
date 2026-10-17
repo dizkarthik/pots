@@ -48,7 +48,7 @@ balance(pot, M) = Σ budget in effect for each month m in [pot.start_month, M], 
 ### Lockers
 - A locker is a bank account, credit card, wallet or cash, identified by its name (stored in `accounts.bank`; there is no separate name and **no type/category** — Savings/Current/etc. were removed on request).
 - Credit-card lockers (`accounts.is_credit`, currently Millennia and Amazon Pay) show a "CREDIT" tag after the name and are always listed last, whatever the sort. They **cannot hold pots** (enforced in the pot and locker actions; their cards show no pot count). Their card's headline is **Spent in {month}** = Σ expenses in the current month whose Paid via is that card (`getCreditCardSpend`, `lib/queries/lockers.ts`), from any pot. Those expenses still reduce their own pot's balance as usual.
-- A locker's headline number is **Total balance** = Σ outstanding balances of all its pots (archived included; overspent pots reduce it).
+- A bank locker's headline number is **Outstanding balance** = Σ outstanding balances of all its pots (archived included; overspent pots reduce it) **+ Σ invested totals of vaults linked to it**.
 - `accounts.actual_balance_paise` is currently unused by the UI (the bank-balance comparison was removed on request).
 
 ### Expenses
@@ -63,7 +63,8 @@ balance(pot, M) = Σ budget in effect for each month m in [pot.start_month, M], 
 - **Step up / down** (`stepVaultAmount`) changes the monthly amount **from a chosen month onward** (until a later step). Unlike pot budgets, the start month may be **next month or any past month back to the vault's start**, so past totals can change. Creation writes the start-month row; a step at the start month replaces it.
 - **Edit a month** (`vault_adjustments`, unique per vault+month) sets a one-off invested amount for the current or a past month; ₹0 = skipped; "Reset to plan" deletes it. Adjustments win over the monthly amount for their month.
 - Vaults table columns: Vault · Monthly · Months (months running since start, shown as "N months") · Last month · Invested · View. View holds the summary, Step up / down, month-by-month inline edits and "Edit details" (name/icon/colour only).
-- Vaults track the **invested total only** (no current value / returns) and have **no locker link**.
+- Vaults track the **invested total only** (no current value / returns).
+- A vault can **optionally be linked to a bank locker** (`vaults.account_id`; credit-card lockers not allowed) meaning its money is saved there: the vault's invested total is **added to that locker's Outstanding balance** (`summariseLockers`: total = Σ pot balances + Σ invested of linked vaults; the card shows "incl. ₹X in N vaults"). A locker with linked vaults can't be marked as a credit card.
 - Pure logic in `lib/vaults.ts` (+ tests); reads in `lib/queries/vaults.ts`; actions in `lib/actions/vaults.ts`.
 
 ## Folder structure

@@ -8,6 +8,8 @@ export const vaultFormSchema = z.object({
   name: z.string().trim().min(1, "Give the vault a name").max(60, "Keep it under 60 characters"),
   icon: z.enum(POT_ICON_NAMES),
   color: z.enum(POT_COLORS),
+  /** Bank locker the money is saved in; "" = not linked. */
+  accountId: z.union([z.literal(""), z.uuid("Choose a locker")]),
   monthly: amountString(),
 });
 export type VaultFormValues = z.infer<typeof vaultFormSchema>;

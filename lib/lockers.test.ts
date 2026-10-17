@@ -32,6 +32,23 @@ describe("summariseLockers", () => {
   });
 });
 
+describe("vaults saved in a locker", () => {
+  it("adds the invested total of linked vaults to the locker's outstanding balance", () => {
+    const [hdfc, sbi] = summariseLockers(
+      [HDFC, SBI],
+      [pot("hdfc", 50000)],
+      new Map(),
+      [
+        { accountId: "hdfc", investedTotal: 1200000 },
+        { accountId: "hdfc", investedTotal: 300000 },
+        { accountId: null, investedTotal: 999999 }, // not linked: counts nowhere
+      ],
+    );
+    expect(hdfc).toMatchObject({ potBalance: 50000, vaultInvested: 1500000, vaultCount: 2, totalBalance: 1550000 });
+    expect(sbi).toMatchObject({ potBalance: 0, vaultInvested: 0, vaultCount: 0, totalBalance: 0 });
+  });
+});
+
 describe("filterAndSortLockers", () => {
   const all = summariseLockers([MILLENNIA, SBI, AMAZON, HDFC], [pot("sbi", 100), pot("hdfc", 900)]);
   const names = (sort?: string) => filterAndSortLockers(all, { sort }).map((l) => l.account.bank);

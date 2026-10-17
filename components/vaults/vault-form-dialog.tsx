@@ -5,6 +5,8 @@ import { useEffect, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
+import { Label } from "@/components/base/input/label";
+import { Select, SelectItem } from "@/components/base/select/select";
 import { Dialog } from "@/components/shared/dialog";
 import {
   ColorPicker,
@@ -22,9 +24,17 @@ import type { VaultRow } from "@/lib/queries/vaults";
 import { vaultFormSchema, type VaultFormValues } from "@/lib/validation/vaults";
 import { cx } from "@/utils/cx";
 
+const NOT_LINKED = "none";
+
 function defaults(vault: VaultRow | null): VaultFormValues {
   if (!vault)
-    return { name: "", icon: "piggy-bank", color: "chart-7", monthly: "" };
+    return {
+      name: "",
+      icon: "piggy-bank",
+      color: "chart-7",
+      accountId: "",
+      monthly: "",
+    };
   return {
     name: vault.name,
     icon: (POT_ICON_NAMES as string[]).includes(vault.icon)
@@ -33,6 +43,7 @@ function defaults(vault: VaultRow | null): VaultFormValues {
     color: (POT_COLORS as readonly string[]).includes(vault.color)
       ? (vault.color as PotColor)
       : "chart-7",
+    accountId: vault.accountId ?? "",
     // Not edited here: the monthly amount changes via Step up / down.
     monthly: "0",
   };
@@ -43,12 +54,15 @@ export function VaultFormDialog({
   onOpenChange,
   vault,
   month,
+  lockers,
 }: {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   /** null = create a new vault. */
   vault: VaultRow | null;
   month: Month;
+  /** Bank lockers a vault can be saved in (credit cards excluded). */
+  lockers: { id: string; bank: string }[];
 }) {
   const [isPending, startTransition] = useTransition();
   const { control, handleSubmit, reset, setError, formState } =
@@ -68,6 +82,7 @@ export function VaultFormDialog({
             name: values.name,
             icon: values.icon,
             color: values.color,
+            accountId: values.accountId,
           })
         : await createVault(values);
       if (result.ok) {
@@ -108,6 +123,34 @@ export function VaultFormDialog({
               validationBehavior="aria"
               autoFocus
             />
+          )}
+        />
+        <Controller
+          control={control}
+          name="accountId"
+          render={({ field, fieldState }) => (
+            <div className="flex flex-col gap-1.5">
+              <Label>Locker</Label>
+              <Select
+                aria-label="Locker"
+                selectedKey={field.value === "" ? NOT_LINKED : field.value}
+                onSelectionChange={(k) =>
+                  field.onChange(k === NOT_LINKED ? "" : String(k))
+                }
+              >
+                {[{ id: NOT_LINKED, bank: "Not linked" }, ...lockers].map(
+                  (l) => (
+                    <SelectItem key={l.id} id={l.id}>
+                      {l.bank}
+                    </SelectItem>
+                  ),
+                )}
+              </Select>
+              <p className="text-caption-1-regular text-text-secondary">
+                {fieldState.error?.message ??
+                  "Optional. If the money is saved in a bank account, its invested total counts toward that locker's balance."}
+              </p>
+            </div>
           )}
         />
         {!vault && (

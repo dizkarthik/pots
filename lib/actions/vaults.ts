@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
 import { getDb } from "@/lib/db/client";
-import { vaultAdjustments, vaultAmounts, vaults } from "@/lib/db/schema";
+import { accounts, vaultAdjustments, vaultAmounts, vaults } from "@/lib/db/schema";
 import { toPaise } from "@/lib/money";
 import { addMonths, compareMonths, currentMonth, firstDayOf, formatMonth, monthOf, type Month } from "@/lib/month";
 import { vaultAdjustmentSchema, vaultDetailsSchema, vaultFormSchema, vaultStepSchema } from "@/lib/validation/vaults";
@@ -13,18 +13,31 @@ import { failed, invalid, type ActionResult } from "./result";
 
 const idSchema = z.uuid();
 
+/** "" → not linked. Otherwise the locker must exist and be a bank locker (not a credit card). */
+async function resolveLocker(accountId: string): Promise<{ accountId: string | null } | ActionResult> {
+  if (accountId === "") return { accountId: null };
+  const [row] = await getDb().select({ isCredit: accounts.isCredit }).from(accounts).where(eq(accounts.id, accountId));
+  if (!row) return failed("That locker no longer exists.");
+  if (row.isCredit) {
+    return { ok: false, error: "Please fix the highlighted fields.", fieldErrors: { accountId: "Credit card lockers can't hold vaults" } };
+  }
+  return { accountId };
+}
+
 export async function createVault(input: unknown): Promise<ActionResult> {
   await requireSession();
   const parsed = vaultFormSchema.safeParse(input);
   if (!parsed.success) return invalid(parsed.error);
   const { name, icon, color, monthly } = parsed.data;
+  const locker = await resolveLocker(parsed.data.accountId);
+  if ("ok" in locker) return locker;
 
   // Starts this month; its first monthly amount applies to this month.
   const db = getDb();
   const id = crypto.randomUUID();
   const startMonth = firstDayOf(currentMonth());
   await db.batch([
-    db.insert(vaults).values({ id, name, icon, color, startMonth }),
+    db.insert(vaults).values({ id, name, icon, color, accountId: locker.accountId, startMonth }),
     db.insert(vaultAmounts).values({ vaultId: id, amountPaise: toPaise(monthly)!, effectiveFrom: startMonth }),
   ]);
   revalidatePath("/", "layout");
@@ -37,9 +50,12 @@ export async function updateVaultDetails(vaultId: unknown, input: unknown): Prom
   if (!id.success) return failed("Unknown vault.");
   const parsed = vaultDetailsSchema.safeParse(input);
   if (!parsed.success) return invalid(parsed.error);
+  const locker = await resolveLocker(parsed.data.accountId);
+  if ("ok" in locker) return locker;
+  const { name, icon, color } = parsed.data;
   const updated = await getDb()
     .update(vaults)
-    .set(parsed.data)
+    .set({ name, icon, color, accountId: locker.accountId })
     .where(eq(vaults.id, id.data))
     .returning({ id: vaults.id });
   if (updated.length === 0) return failed("Unknown vault.");

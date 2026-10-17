@@ -4,13 +4,14 @@ import { filterAndSortLockers, summariseLockers, type LockerSearchParams } from 
 import { formatMonth } from "@/lib/month";
 import { getCreditCardSpend } from "@/lib/queries/lockers";
 import { getPotSummaries } from "@/lib/queries/pots";
+import { getVaultSummaries } from "@/lib/queries/vaults";
 
 export const metadata = { title: "Lockers · Pots" };
 
 export default async function LockersPage({ searchParams }: { searchParams: Promise<LockerSearchParams> }) {
   const [params, { month, pots, accounts }] = await Promise.all([searchParams, getPotSummaries()]);
-  const creditSpend = await getCreditCardSpend(month);
-  const lockers = filterAndSortLockers(summariseLockers(accounts, pots, creditSpend), params);
+  const [creditSpend, { vaults }] = await Promise.all([getCreditCardSpend(month), getVaultSummaries(month)]);
+  const lockers = filterAndSortLockers(summariseLockers(accounts, pots, creditSpend, vaults), params);
 
   return (
     <>

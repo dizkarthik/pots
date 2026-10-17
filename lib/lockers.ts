@@ -9,6 +9,11 @@ export interface LockerSummary {
    * pots included (their money is still in the account). Overspent pots
    * reduce it.
    */
+  potBalance: number;
+  /** Invested total of vaults saved in this locker. */
+  vaultInvested: number;
+  vaultCount: number;
+  /** Outstanding balance: potBalance + vaultInvested. */
   totalBalance: number;
   /**
    * Credit-card lockers only: total charged to the card in the viewed month
@@ -17,17 +22,30 @@ export interface LockerSummary {
   creditSpend: number | null;
 }
 
+/** The bits of a vault that count toward its locker's balance. */
+export interface LinkedVault {
+  accountId: string | null;
+  investedTotal: number;
+}
+
 export function summariseLockers(
   accounts: Account[],
   pots: PotSummary[],
   creditSpend: ReadonlyMap<string, number> = new Map(),
+  vaults: readonly LinkedVault[] = [],
 ): LockerSummary[] {
   return accounts.map((account) => {
     const own = pots.filter((p) => p.accountId === account.id);
+    const linked = vaults.filter((v) => v.accountId === account.id);
+    const potBalance = own.reduce((sum, p) => sum + p.balance, 0);
+    const vaultInvested = linked.reduce((sum, v) => sum + v.investedTotal, 0);
     return {
       account,
       pots: own,
-      totalBalance: own.reduce((sum, p) => sum + p.balance, 0),
+      potBalance,
+      vaultInvested,
+      vaultCount: linked.length,
+      totalBalance: potBalance + vaultInvested,
       creditSpend: account.isCredit ? (creditSpend.get(account.id) ?? 0) : null,
     };
   });

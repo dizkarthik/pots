@@ -15,7 +15,15 @@ import { formatINR } from "@/lib/money";
 import { formatMonth, type Month } from "@/lib/month";
 import type { VaultRow } from "@/lib/queries/vaults";
 
-export function VaultsView({ vaults, month }: { vaults: VaultRow[]; month: Month }) {
+export function VaultsView({
+  vaults,
+  month,
+  lockers,
+}: {
+  vaults: VaultRow[];
+  month: Month;
+  lockers: { id: string; bank: string }[];
+}) {
   // undefined = closed, null = creating, row = editing details
   const [editing, setEditing] = useState<VaultRow | null | undefined>(undefined);
   const [viewingId, setViewingId] = useState<string | null>(null);
@@ -64,7 +72,10 @@ export function VaultsView({ vaults, month }: { vaults: VaultRow[]; month: Month
                       <PotTile icon={v.icon} color={v.color} />
                       <div className="flex min-w-0 flex-col">
                         <span className="truncate text-body-medium text-text-primary">{v.name}</span>
-                        <span className="text-caption-1-regular text-text-tertiary">Since {formatMonth(v.startMonth)}</span>
+                        <span className="text-caption-1-regular text-text-tertiary">
+                          Since {formatMonth(v.startMonth)}
+                          {v.bank && ` · in ${v.bank}`}
+                        </span>
                       </div>
                     </div>
                   </TableCell>
@@ -121,6 +132,7 @@ export function VaultsView({ vaults, month }: { vaults: VaultRow[]; month: Month
         onOpenChange={(open) => !open && setEditing(undefined)}
         vault={editing ?? null}
         month={month}
+        lockers={lockers}
       />
       <VaultViewDialog
         key={viewing?.id ?? "none"}

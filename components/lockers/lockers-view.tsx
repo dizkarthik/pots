@@ -104,6 +104,12 @@ function LockerCard({
               <dd>
                 <Money paise={locker.totalBalance} signed className="text-title-2-semibold text-text-primary" />
               </dd>
+              {locker.vaultCount > 0 && (
+                <dd className="text-caption-1-regular text-text-secondary">
+                  incl. <Money paise={locker.vaultInvested} /> in {locker.vaultCount}{" "}
+                  {locker.vaultCount === 1 ? "vault" : "vaults"}
+                </dd>
+              )}
             </>
           )}
         </div>
