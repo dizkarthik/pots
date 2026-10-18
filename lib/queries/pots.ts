@@ -40,7 +40,8 @@ export async function getPotSummaries(month: Month = currentMonth()): Promise<{ 
   await requireSession();
   const db = getDb();
 
-  const [accountRows, potRows, budgetRows, periodRows, monthlySpend] = await Promise.all([
+  // One HTTP round trip for all five reads (neon-http batch) — the DB is far away.
+  const [accountRows, potRows, budgetRows, periodRows, monthlySpend] = await db.batch([
     db.select().from(accounts).orderBy(asc(accounts.bank)),
     db.select().from(pots).orderBy(asc(pots.name)),
     db.select().from(potBudgets).orderBy(asc(potBudgets.effectiveFrom)),

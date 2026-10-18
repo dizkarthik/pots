@@ -5,7 +5,7 @@ import { SpendByPotChart, SpendTrendChart } from "@/components/dashboard/charts"
 import { BudgetVsActual, KpiRow, PotBalanceCards, RecentExpensesList } from "@/components/dashboard/sections";
 import { budgetVsActualByLocker, monthTotals, potsNeedingAttention, spendByPot } from "@/lib/dashboard";
 import { formatINR } from "@/lib/money";
-import { formatMonth } from "@/lib/month";
+import { currentMonth, formatMonth } from "@/lib/month";
 import { getRecentExpenses, getSpendTrend } from "@/lib/queries/dashboard";
 import { getPotSummaries } from "@/lib/queries/pots";
 
@@ -14,8 +14,9 @@ export const metadata = { title: "Dashboard · Pots" };
 const linkClass = "text-body-medium text-accent-600 underline-offset-4 hover:underline";
 
 export default async function DashboardPage() {
-  const { month, pots } = await getPotSummaries();
-  const [trend, recent] = await Promise.all([getSpendTrend(month, 6), getRecentExpenses(8)]);
+  const month = currentMonth();
+  // All reads in parallel: each is a slow round trip to the database.
+  const [{ pots }, trend, recent] = await Promise.all([getPotSummaries(month), getSpendTrend(month, 6), getRecentExpenses(8)]);
 
   const totals = monthTotals(pots);
   const byPot = spendByPot(pots, 8);

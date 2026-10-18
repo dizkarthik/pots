@@ -34,14 +34,16 @@ export interface VaultRow {
   adjustments: (VaultAdjustment & { note: string | null })[];
 }
 
-export async function getVaultSummaries(month: Month = currentMonth()): Promise<{ month: Month; vaults: VaultRow[] }> {
+export async function getVaultSummaries(
+  month: Month = currentMonth(),
+): Promise<{ month: Month; vaults: VaultRow[]; bankLockers: { id: string; bank: string }[] }> {
   await requireSession();
   const db = getDb();
-  const [vaultRows, amountRows, adjustmentRows, accountRows] = await Promise.all([
+  const [vaultRows, amountRows, adjustmentRows, accountRows] = await db.batch([
     db.select().from(vaults).orderBy(asc(vaults.name)),
     db.select().from(vaultAmounts).orderBy(asc(vaultAmounts.effectiveFrom)),
     db.select().from(vaultAdjustments),
-    db.select({ id: accounts.id, bank: accounts.bank }).from(accounts),
+    db.select({ id: accounts.id, bank: accounts.bank, isCredit: accounts.isCredit }).from(accounts).orderBy(asc(accounts.bank)),
   ]);
   const bankById = new Map(accountRows.map((a) => [a.id, a.bank]));
 
@@ -74,5 +76,7 @@ export async function getVaultSummaries(month: Month = currentMonth()): Promise<
       adjustments,
     };
   });
-  return { month, vaults: rows };
+  // Bank lockers a vault can be parked in (credit cards can't hold vaults).
+  const bankLockers = accountRows.filter((a) => !a.isCredit).map((a) => ({ id: a.id, bank: a.bank }));
+  return { month, vaults: rows, bankLockers };
 }

@@ -3,15 +3,12 @@ import { VaultsView } from "@/components/vaults/vaults-view";
 import { filterAndSortVaults, parkedFilterOptions, type VaultSearchParams } from "@/lib/filters/vaults";
 import { formatINR } from "@/lib/money";
 import { formatMonth } from "@/lib/month";
-import { getPotSummaries } from "@/lib/queries/pots";
 import { getVaultSummaries } from "@/lib/queries/vaults";
 
 export const metadata = { title: "Vaults · Pots" };
 
 export default async function VaultsPage({ searchParams }: { searchParams: Promise<VaultSearchParams> }) {
-  const [params, { month, vaults }, { accounts }] = await Promise.all([searchParams, getVaultSummaries(), getPotSummaries()]);
-  // Vaults can only be saved in bank lockers, not credit cards.
-  const lockers = accounts.filter((a) => !a.isCredit).map((a) => ({ id: a.id, bank: a.bank }));
+  const [params, { month, vaults, bankLockers: lockers }] = await Promise.all([searchParams, getVaultSummaries()]);
   const visible = filterAndSortVaults(vaults, params);
   const totalInvested = vaults.reduce((s, v) => s + v.investedTotal, 0);
   const thisMonth = vaults.reduce((s, v) => s + v.thisMonth.amountPaise, 0);

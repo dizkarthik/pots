@@ -86,7 +86,7 @@ export async function getExpenses(filters: ExpenseFilters) {
 export async function getExpenseOptions() {
   await requireSession();
   const db = getDb();
-  const [potRows, lockerRows, methodRows] = await Promise.all([
+  const [potRows, lockerRows, methodRows] = await db.batch([
     db
       .select({
         id: pots.id,
