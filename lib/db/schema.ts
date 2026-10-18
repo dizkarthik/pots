@@ -197,6 +197,38 @@ export const vaultAmounts = pgTable(
   ],
 );
 
+/**
+ * A month the user has allocated (clicked Allocate). One row per month; its
+ * primary key is what locks the month — a second Allocate fails.
+ * Months before MANUAL_ALLOCATION_FROM (lib/allocation.ts) accrue automatically.
+ */
+export const monthAllocations = pgTable(
+  "month_allocations",
+  {
+    month: day("month").primaryKey(),
+    allocatedAt: timestamp("allocated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  () => [check("month_allocations_month_first_day", firstOfMonth("month"))],
+);
+
+/** What each pot received in an allocated month (feeds the balance instead of the budget). */
+export const potAllocations = pgTable(
+  "pot_allocations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    potId: uuid("pot_id")
+      .notNull()
+      .references(() => pots.id, { onDelete: "cascade" }),
+    month: day("month").notNull(),
+    amountPaise: paise("amount_paise").notNull(),
+  },
+  (t) => [
+    unique("pot_allocations_pot_month").on(t.potId, t.month),
+    check("pot_allocations_amount_non_negative", sql.raw("amount_paise >= 0")),
+    check("pot_allocations_month_first_day", firstOfMonth("month")),
+  ],
+);
+
 /** A one-off amount for a specific month (₹0 = skipped), overriding the monthly amount. */
 export const vaultAdjustments = pgTable(
   "vault_adjustments",
@@ -221,6 +253,7 @@ export type Vault = typeof vaults.$inferSelect;
 export type Account = typeof accounts.$inferSelect;
 export type Pot = typeof pots.$inferSelect;
 export type PotBudget = typeof potBudgets.$inferSelect;
+export type PotAllocation = typeof potAllocations.$inferSelect;
 export type PotArchivePeriod = typeof potArchivePeriods.$inferSelect;
 export type Expense = typeof expenses.$inferSelect;
 export type PaymentMethod = typeof paymentMethods.$inferSelect;

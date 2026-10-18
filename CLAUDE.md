@@ -38,11 +38,21 @@ balance(pot, M) = Σ budget in effect for each month m in [pot.start_month, M], 
 - Archiving freezes accrual: months inside a `pot_archive_periods` row (after the archive month) add no budget. Unarchiving closes the period; gap months are **not** back-filled.
 - Implemented as a pure function in `lib/balance.ts`, covered by `lib/balance.test.ts`. Change the tests first if the rule changes.
 
+### Monthly allocation (manual from Nov 2026)
+- Months **before `MANUAL_ALLOCATION_FROM` (2026-11, `lib/allocation.ts`) accrue automatically** as above. From November 2026 a month adds a pot's **allocated amount** (`pot_allocations`) instead of the budget in effect — and **nothing until the month is allocated**. Budgets then only pre-fill the allocation form. Implemented in `monthlyAccrual` (`lib/balance.ts`, `manualFrom` + `allocations` on the ledger, set by `toLedger`).
+- The Pots page shows an allocation section above the toolbar: **View** (dialog with every active pot's amount in an editable box, pre-filled from its budget for that month) and **Allocate** (confirm, then `allocateMonth`).
+- Eligible pots for month m: not archived and `start_month ≤ m` (`isAllocationEligible`). The server re-derives this and rejects a stale form.
+- Allocating writes `month_allocations(month)` (primary key = **lock**; an allocated month can never be allocated again) + one `pot_allocations` row per eligible pot, in one batch. A changed amount **also becomes the pot's budget from that month on** (upsert `pot_budgets` at `effective_from = m`; never touches months before Nov 2026).
+- Unallocated months stay pending and are offered **oldest first** (catch-up). Only months ≤ the current month can be allocated.
+- While nothing is pending, the section shows the next month: View can **Save plan** (`saveAllocationPlan`, budgets from that month), Allocate is disabled until the 1st.
+- A pot created in a month that's already allocated gets a `pot_allocations` row for its start month immediately (full budget, as before).
+
 ### Budget changes apply from next month
 - Editing a pot's budget always upserts `pot_budgets(pot_id, effective_from = first day of NEXT month)`; unique on `(pot_id, effective_from)` so repeat edits in a month overwrite the pending one. December rolls to January of next year.
 - `effective_from` is computed on the server (`lib/budget.ts`, Asia/Kolkata "now"). Never accept it from the client.
 - Current and past months' budgets are never modified by an edit.
 - Exception: creating a pot writes its initial budget with `effective_from = start_month` (current month).
+- Exception: allocating a month with a changed amount writes the budget at that month (see Monthly allocation).
 - UI shows current budget, pending "Upcoming" budget (e.g. "₹600 from Nov"), history; edit form helper text "Applies from {next month}".
 
 ### Lockers

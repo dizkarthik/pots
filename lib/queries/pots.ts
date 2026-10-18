@@ -5,7 +5,16 @@ import { requireSession } from "@/lib/auth";
 import { computePotBalance } from "@/lib/balance";
 import { budgetInEffect, upcomingBudget, type BudgetEntry } from "@/lib/budget";
 import { getDb } from "@/lib/db/client";
-import { accounts, expenses, potArchivePeriods, potBudgets, pots, type Account } from "@/lib/db/schema";
+import {
+  accounts,
+  expenses,
+  monthAllocations,
+  potAllocations,
+  potArchivePeriods,
+  potBudgets,
+  pots,
+  type Account,
+} from "@/lib/db/schema";
 import { toLedger } from "@/lib/ledger";
 import { currentMonth, monthOf, type Month } from "@/lib/month";
 
@@ -25,7 +34,7 @@ export interface PotSummary {
   upcoming: BudgetEntry | null;
   /** All budget rows, oldest first. */
   history: BudgetEntry[];
-  /** Budget accrued in the viewed month (0 while archived). */
+  /** Budget accrued in the viewed month (0 while archived, or while a manual month is unallocated). */
   budgetThisMonth: number;
   spentThisMonth: number;
   carriedOver: number;
@@ -36,12 +45,18 @@ export interface PotSummary {
  * Every pot with its computed balance for `month`. Expenses are pre-summed
  * per pot per month in SQL; the balance maths stays in lib/balance.ts.
  */
-export async function getPotSummaries(month: Month = currentMonth()): Promise<{ month: Month; pots: PotSummary[]; accounts: Account[] }> {
+export async function getPotSummaries(month: Month = currentMonth()): Promise<{
+  month: Month;
+  pots: PotSummary[];
+  accounts: Account[];
+  /** Months the user has allocated (manual allocation), oldest first. */
+  allocatedMonths: Month[];
+}> {
   await requireSession();
   const db = getDb();
 
-  // One HTTP round trip for all five reads (neon-http batch) — the DB is far away.
-  const [accountRows, potRows, budgetRows, periodRows, monthlySpend] = await db.batch([
+  // One HTTP round trip for all the reads (neon-http batch) — the DB is far away.
+  const [accountRows, potRows, budgetRows, periodRows, monthlySpend, allocationRows, allocatedRows] = await db.batch([
     db.select().from(accounts).orderBy(asc(accounts.bank)),
     db.select().from(pots).orderBy(asc(pots.name)),
     db.select().from(potBudgets).orderBy(asc(potBudgets.effectiveFrom)),
@@ -54,6 +69,8 @@ export async function getPotSummaries(month: Month = currentMonth()): Promise<{ 
       })
       .from(expenses)
       .groupBy(expenses.potId, sql`date_trunc('month', ${expenses.date})`),
+    db.select().from(potAllocations),
+    db.select({ month: monthAllocations.month }).from(monthAllocations).orderBy(asc(monthAllocations.month)),
   ]);
 
   const byPot = <T extends { potId: string }>(rows: T[]) => {
@@ -64,13 +81,20 @@ export async function getPotSummaries(month: Month = currentMonth()): Promise<{ 
   const budgetsByPot = byPot(budgetRows);
   const periodsByPot = byPot(periodRows);
   const spendByPot = byPot(monthlySpend);
+  const allocationsByPot = byPot(allocationRows);
   const accountById = new Map(accountRows.map((a) => [a.id, a]));
 
   const summaries = potRows.map((pot): PotSummary => {
     // One synthetic entry per month (dated the 1st) is enough for the ledger:
     // it only compares dates against month boundaries.
     const spend = (spendByPot.get(pot.id) ?? []).map((s) => ({ date: s.monthStart, amountPaise: Number(s.total) }));
-    const ledger = toLedger(pot, budgetsByPot.get(pot.id) ?? [], periodsByPot.get(pot.id) ?? [], spend);
+    const ledger = toLedger(
+      pot,
+      budgetsByPot.get(pot.id) ?? [],
+      periodsByPot.get(pot.id) ?? [],
+      spend,
+      allocationsByPot.get(pot.id) ?? [],
+    );
     const result = computePotBalance(ledger, month);
     const current = budgetInEffect(ledger.budgets, month);
     const next = upcomingBudget(ledger.budgets, month);
@@ -95,6 +119,6 @@ export async function getPotSummaries(month: Month = currentMonth()): Promise<{ 
     };
   });
 
-  return { month, pots: summaries, accounts: accountRows };
+  return { month, pots: summaries, accounts: accountRows, allocatedMonths: allocatedRows.map((r) => monthOf(r.month)) };
 }
 

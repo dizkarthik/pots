@@ -3,11 +3,12 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireSession } from "@/lib/auth";
+import { MANUAL_ALLOCATION_FROM } from "@/lib/allocation";
 import { budgetInEffect, nextBudgetEffectiveFrom } from "@/lib/budget";
 import { getDb } from "@/lib/db/client";
-import { accounts, potArchivePeriods, potBudgets, pots } from "@/lib/db/schema";
+import { accounts, monthAllocations, potAllocations, potArchivePeriods, potBudgets, pots } from "@/lib/db/schema";
 import { toPaise } from "@/lib/money";
-import { currentMonth, firstDayOf, monthOf } from "@/lib/month";
+import { compareMonths, currentMonth, firstDayOf, monthOf } from "@/lib/month";
 import { potFormSchema, potIdSchema } from "@/lib/validation/pots";
 import { failed, invalid, type ActionResult } from "./result";
 
@@ -24,16 +25,24 @@ export async function createPot(input: unknown): Promise<ActionResult> {
   const parsed = potFormSchema.safeParse(input);
   if (!parsed.success) return invalid(parsed.error);
   const { name, icon, color, accountId, budget } = parsed.data;
-  const locker = await lockerProblem(accountId);
+  const db = getDb();
+  const month = currentMonth();
+  const startMonth = firstDayOf(month);
+  const [locker, allocated] = await Promise.all([
+    lockerProblem(accountId),
+    db.select({ month: monthAllocations.month }).from(monthAllocations).where(eq(monthAllocations.month, startMonth)),
+  ]);
   if (locker) return failed(locker);
 
-  // A new pot starts this month and gets its full budget for it.
-  const db = getDb();
+  // A new pot starts this month and gets its full budget for it. If this
+  // (manual) month was already allocated, the pot gets its share right away.
   const id = crypto.randomUUID();
-  const startMonth = firstDayOf(currentMonth());
+  const amountPaise = toPaise(budget)!;
+  const allocateNow = compareMonths(month, MANUAL_ALLOCATION_FROM) >= 0 && allocated.length > 0;
   await db.batch([
     db.insert(pots).values({ id, name, icon, color, accountId, startMonth }),
-    db.insert(potBudgets).values({ potId: id, amountPaise: toPaise(budget)!, effectiveFrom: startMonth }),
+    db.insert(potBudgets).values({ potId: id, amountPaise, effectiveFrom: startMonth }),
+    ...(allocateNow ? [db.insert(potAllocations).values({ potId: id, month: startMonth, amountPaise })] : []),
   ]);
 
   revalidatePath("/", "layout");

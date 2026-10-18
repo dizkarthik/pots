@@ -64,6 +64,13 @@
       "when": 1792241939317,
       "tag": "0008_vault_parked",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792338072772,
+      "tag": "0009_curvy_zaran",
+      "breakpoints": true
     }
   ]
 }

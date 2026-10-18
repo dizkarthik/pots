@@ -242,3 +242,52 @@ describe("computePotBalance", () => {
     });
   });
 });
+
+describe("manual allocation (months from manualFrom on)", () => {
+  // Petrol: ₹500/month budget; manual allocation starts Nov 2026.
+  const base = petrol({ startMonth: "2026-09", budgets: [{ effectiveFrom: "2026-09", amountPaise: R(500) }], manualFrom: "2026-11" });
+
+  it("still accrues the budget automatically before manualFrom", () => {
+    expect(computePotBalance(base, "2026-10").balance).toBe(R(1000));
+  });
+
+  it("adds nothing for a month that hasn't been allocated", () => {
+    const nov = computePotBalance(base, "2026-11");
+    expect(nov.budgetThisMonth).toBe(0);
+    expect(nov.balance).toBe(R(1000));
+  });
+
+  it("adds the allocated amount, not the budget, once allocated", () => {
+    const ledger = { ...base, allocations: [{ month: "2026-11" as Month, amountPaise: R(650) }] };
+    const nov = computePotBalance(ledger, "2026-11");
+    expect(nov.budgetThisMonth).toBe(R(650));
+    expect(nov.carriedOver).toBe(R(1000));
+    expect(nov.balance).toBe(R(1650));
+  });
+
+  it("lets a missed month be caught up later, and an allocated ₹0 adds nothing", () => {
+    const ledger = {
+      ...base,
+      allocations: [
+        { month: "2026-12" as Month, amountPaise: R(500) },
+        { month: "2027-01" as Month, amountPaise: 0 },
+      ],
+    };
+    // Nov never allocated, Dec 500, Jan 0
+    expect(computePotBalance(ledger, "2027-01").balance).toBe(R(1500));
+  });
+
+  it("ignores allocations before manualFrom (automatic months win)", () => {
+    const ledger = { ...base, allocations: [{ month: "2026-10" as Month, amountPaise: R(9999) }] };
+    expect(computePotBalance(ledger, "2026-10").balance).toBe(R(1000));
+  });
+
+  it("subtracts expenses as usual in manual months", () => {
+    const ledger = {
+      ...base,
+      allocations: [{ month: "2026-11" as Month, amountPaise: R(500) }],
+      expenses: [{ date: "2026-11-05", amountPaise: R(1700) }],
+    };
+    expect(computePotBalance(ledger, "2026-11").balance).toBe(R(-200));
+  });
+});

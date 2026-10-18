@@ -14,7 +14,16 @@ import { compareMonths, lastDayOf, monthOf, monthsBetween, type Month } from "./
  *   strictly before `toMonth` (or with no `toMonth`, any month after
  *   `fromMonth`) accrues nothing. The archive month and the unarchive month
  *   both accrue, and gap months are never back-filled.
+ * - Manual allocation: from `manualFrom` on, a month adds its *allocated*
+ *   amount (written when the user clicks Allocate for that month) instead of
+ *   the budget in effect, and nothing until it's allocated. Budgets then only
+ *   pre-fill the allocation form. Months before `manualFrom` accrue as above.
  */
+
+export interface AllocationEntry {
+  month: Month;
+  amountPaise: number;
+}
 
 export interface ArchivePeriod {
   /** Month the pot was archived in (still accrues). */
@@ -34,6 +43,10 @@ export interface PotLedger {
   budgets: readonly BudgetEntry[];
   expenses: readonly ExpenseEntry[];
   archivePeriods?: readonly ArchivePeriod[];
+  /** First month that needs a manual allocation; omitted = always automatic. */
+  manualFrom?: Month;
+  /** Allocated amounts for manual months. */
+  allocations?: readonly AllocationEntry[];
 }
 
 export interface PotBalance {
@@ -58,10 +71,13 @@ export function isMonthFrozen(month: Month, periods: readonly ArchivePeriod[] = 
   );
 }
 
-/** Budget accrued in a single month (0 before start or while frozen). */
+/** Budget accrued in a single month (0 before start, while frozen, or while a manual month is unallocated). */
 export function monthlyAccrual(ledger: PotLedger, month: Month): number {
   if (compareMonths(month, ledger.startMonth) < 0) return 0;
   if (isMonthFrozen(month, ledger.archivePeriods)) return 0;
+  if (ledger.manualFrom && compareMonths(month, ledger.manualFrom) >= 0) {
+    return ledger.allocations?.find((a) => a.month === month)?.amountPaise ?? 0;
+  }
   return budgetInEffect(ledger.budgets, month)?.amountPaise ?? 0;
 }
 
