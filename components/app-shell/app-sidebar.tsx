@@ -9,6 +9,7 @@ import {
   LogOut,
   PiggyBank,
   Receipt,
+  Scale,
   Vault,
   PanelLeftClose,
   PanelLeftOpen,
@@ -19,7 +20,7 @@ import { cx } from "@/utils/cx";
 import { SIDEBAR_COOKIE } from "./constants";
 
 // Adapted from BoardUI's DashboardSidebar (components/application/dashboard),
-// trimmed to this app's four destinations. Collapsed state is persisted in a
+// trimmed to this app's destinations. Collapsed state is persisted in a
 // cookie so the server renders the right width on first paint.
 
 type IconComponent = ComponentType<{ className?: string; "aria-hidden"?: boolean | "true" | "false" }>;
@@ -30,6 +31,7 @@ const NAV: { href: string; label: string; icon: IconComponent }[] = [
   { href: "/pots", label: "Pots", icon: Vault },
   { href: "/lockers", label: "Lockers", icon: Landmark },
   { href: "/vaults", label: "Vaults", icon: PiggyBank },
+  { href: "/settlement", label: "Settlement", icon: Scale },
 ];
 
 function isActive(pathname: string, href: string) {

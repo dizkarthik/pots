@@ -67,14 +67,19 @@ balance(pot, M) = Σ budget in effect for each month m in [pot.start_month, M], 
 - **Parked** = where a vault's money is saved (optional; at most one, DB-enforced): either a **bank locker** (`vaults.account_id`; credit cards not allowed) — its invested total is **added to that locker's Outstanding balance** (card shows "incl. ₹X in N vaults"; a locker with linked vaults can't be marked credit) — or an **investment type** (`vaults.parked_in`, one of `VAULT_INSTRUMENTS`: Mutual Fund, Stocks, IPO, Gold, PPF, EPF, Bonds, Crypto), which affects no locker. "Cash" is a locker, so it isn't repeated as an instrument. Encoded in forms as `a:<id>` / `i:<name>` (`parseParked` in `lib/vaults.ts`).
 - Pure logic in `lib/vaults.ts` (+ tests); reads in `lib/queries/vaults.ts`; actions in `lib/actions/vaults.ts`.
 
+### Settlement
+- `/settlement` lists every **bank** locker (credit cards excluded) with: Locker · Outstanding balance (same number as the Lockers page) · Current balance (a numeric input) · Difference = Outstanding − Current.
+- Positive difference = locker is short → "Transfer in", green (`text-status-lime-text`) with "+"; negative = "Extra", red with "−"; zero = "Settled". A totals row sums outstanding over all lockers and current/difference over lockers with a balance entered.
+- Typed balances are **not saved** (client state only, by request). Pure maths in `lib/settlement.ts` (+ tests).
+
 ## Folder structure
 ```
 app/(auth)/login/          login page + form
 app/(app)/                 authenticated shell (sidebar) — page.tsx is the dashboard
-app/(app)/{expenses,pots,lockers,vaults}/
+app/(app)/{expenses,pots,lockers,vaults,settlement}/
 components/base, components/application, components/foundations   BoardUI (source-owned)
 components/app-shell/      sidebar, page header
-components/{expenses,pots,lockers,vaults,dashboard,charts,motion}/        feature + registry components
+components/{expenses,pots,lockers,vaults,settlement,dashboard,charts,motion}/        feature + registry components
 lib/auth/                  session (edge-safe) + server helpers
 lib/actions/               server actions ("use server")
 lib/queries/               server-side reads
