@@ -99,7 +99,7 @@ export function adjustableMonths(startMonth: Month, currentMonth: Month): Month[
  * one of these investment types. Encoded for forms/URLs as "a:<accountId>" or
  * "i:<instrument>"; "" = not set. ("Cash" is a locker, so it isn't repeated here.)
  */
-export const VAULT_INSTRUMENTS = ["Mutual Fund", "Stocks", "IPO", "Gold", "PPF", "EPF", "Bonds", "Crypto"] as const;
+export const VAULT_INSTRUMENTS = ["Mutual Fund", "Stocks", "IPO", "Gold", "PPF", "EPF", "Bonds", "Crypto", "Post Office"] as const;
 export type VaultInstrument = (typeof VAULT_INSTRUMENTS)[number];
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
